@@ -1,5 +1,8 @@
+use crate::config::CONFIG;
+
 pub fn handle_base(branch: String) {
-    println!("Base branch: {}", branch);
+    let mut config = CONFIG.write().expect("Config のロックに失敗しました！");
+    config.save_base_branch(branch.clone());
 }
 
 #[cfg(test)]

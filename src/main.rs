@@ -1,3 +1,6 @@
+mod config;
+mod utils;
+
 use clap::Parser;
 mod commands;
 use commands::Commands;
