@@ -1,5 +1,5 @@
 pub mod init;
-pub use init::{InitSubcommand, handle_init};
+pub use init::{InitCommand, handle_init};
 pub mod ff;
 pub use ff::handle_ff;
 
@@ -10,10 +10,7 @@ pub enum Commands {
     FF {
         target: String,
     },
-    Init {
-        #[command(subcommand)]
-        subcommand: InitSubcommand,
-    },
+    Init(InitCommand),
 }
 
 pub fn handle_command(command: Commands) {
@@ -21,8 +18,8 @@ pub fn handle_command(command: Commands) {
         Commands::FF { target } => {
             handle_ff(target);
         }
-        Commands::Init { subcommand } => {
-            handle_init(subcommand);
+        Commands::Init(cmd) => {
+            handle_init(cmd);
         }
     }
 }
@@ -40,11 +37,9 @@ mod tests {
         assert_eq!(target, "test_target");
 
         let branch = "test_branch".to_string();
-        handle_command(Commands::Init {
-            subcommand: InitSubcommand::Base {
-                branch: branch.clone(),
-            },
-        });
+        handle_command(Commands::Init(InitCommand {
+            base: Some(branch.clone()),
+        }));
         assert_eq!(branch, "test_branch");
     }
 }
