@@ -10,13 +10,12 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct Config {
-    pub base_branch: Option<String>,
+    base_branch: Option<String>,
 }
 
 impl Config {
     pub const CONFIG_DIR: &'static str = ".mirudi";
     pub const CONFIG_FILE: &'static str = "config.yaml";
-    
 
     pub fn save_base_branch(&mut self, new_branch: String) {
         let config_file_path = Self::file_path();
@@ -26,6 +25,11 @@ impl Config {
         let mut file = File::create(&config_file_path).expect("ファイルの作成に失敗しました");
         file.write_all(content.as_bytes())
             .expect("ファイルへの書き込みに失敗しました");
+    }
+
+    #[cfg(test)]
+    pub fn base_branch(&self) -> Option<String> {
+        self.base_branch.clone()
     }
 
     fn new() -> Self {
