@@ -12,3 +12,18 @@ install: build
 uninstall:
 	rm -f $(INSTALL_PATH)/$(BINARY_NAME)
 	@echo "Uninstalled from $(INSTALL_PATH)/$(BINARY_NAME)"
+
+lint:
+	cargo clippy --all-targets --all-features -- -D warnings
+
+check:
+	cargo fmt --all -- --check
+	@echo "Code style checked"
+
+format:
+	cargo fmt --all
+	@echo "Code formatted"
+
+test:
+	cargo test --all-targets --all-features -- --nocapture
+	@echo "Tests passed"
