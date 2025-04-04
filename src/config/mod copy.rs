@@ -1,3 +1,6 @@
+pub mod error;
+
+
 use crate::utils::env::config_dir;
 
 use once_cell::sync::Lazy;
