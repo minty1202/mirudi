@@ -4,6 +4,8 @@ pub mod ff;
 pub use ff::FFCommand;
 pub mod handler;
 pub use handler::CommandHandler;
+mod scope;
+pub use scope::ScopeCommand;
 
 use crate::config::Manager;
 
@@ -14,6 +16,8 @@ use std::io::Error;
 pub enum Commands {
     FF(FFCommand),
     Init(InitCommand),
+    #[command(alias = "sc")]
+    Scope(ScopeCommand),
 }
 
 pub fn handle_command(
@@ -24,6 +28,7 @@ pub fn handle_command(
     match command {
         Commands::FF(cmd) => handler.handle_ff(cmd.target, config),
         Commands::Init(cmd) => handler.handle_init(cmd, config),
+        Commands::Scope(cmd) => handler.handle_scope(cmd, config),
     }
 }
 
@@ -66,6 +71,14 @@ mod tests {
         ) -> Result<(), Error> {
             *self.init_called.borrow_mut() = true;
             *self.init_base.borrow_mut() = command.base;
+            Ok(())
+        }
+
+        fn handle_scope(
+            &self,
+            _command: ScopeCommand,
+            _config: &mut dyn Manager,
+        ) -> Result<(), Error> {
             Ok(())
         }
     }
