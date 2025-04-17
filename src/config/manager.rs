@@ -7,37 +7,33 @@ use mockall::automock;
 
 #[cfg_attr(test, automock)]
 pub trait Manager<D: 'static = ConfigData, E: 'static = ConfigError> {
-    fn save(&mut self, data: D) -> Result<(), E>;
-    // TODO: あとで使用する
-    #[allow(dead_code)]
-    fn load(&mut self) -> Result<(), E>;
+    fn save(&mut self, data: &D) -> Result<(), E>;
+    fn load(&mut self) -> Result<D, E>;
     fn get_default(&self) -> Result<D, E>;
 }
 
 pub struct ConfigManager<S: Storage = DefaultConfigStorage> {
-    data: ConfigData,
     storage: S,
 }
 
 impl<S: Storage> ConfigManager<S> {
     pub fn new(storage: S) -> Result<Self, ConfigError> {
-        let data = storage.load()?;
-
-        Ok(Self { data, storage })
+        Ok(Self { storage })
     }
 }
 
+// 現時点では storage を単純にラップしているだけで機能的には不要。
+// ただし将来的に、validator など他の責務（検証・変換など）を統合する可能性があるため、
+// アプリケーションサービス層としての役割を見越して用意している。
 impl<S: Storage> Manager for ConfigManager<S> {
-    fn save(&mut self, data: ConfigData) -> Result<(), ConfigError> {
-        self.storage.save(&data)?;
-        self.data = data;
+    fn save(&mut self, data: &ConfigData) -> Result<(), ConfigError> {
+        self.storage.save(data)?;
         Ok(())
     }
 
-    fn load(&mut self) -> Result<(), ConfigError> {
+    fn load(&mut self) -> Result<ConfigData, ConfigError> {
         let data = self.storage.load()?;
-        self.data = data;
-        Ok(())
+        Ok(data)
     }
 
     fn get_default(&self) -> Result<ConfigData, ConfigError> {
@@ -81,33 +77,6 @@ mod tests {
             let result = ConfigManager::new(mock_storage);
             assert!(result.is_ok());
         }
-
-        #[test]
-        fn test_returns_error() {
-            let mut mock_storage = MockStorage::new();
-
-            mock_storage.expect_load().returning(|| {
-                Err(ConfigError::Io(IoError::new(
-                    IoErrorKind::Other,
-                    "テストエラー",
-                )))
-            });
-
-            let result = ConfigManager::new(mock_storage);
-            assert!(result.is_err());
-        }
-
-        #[test]
-        fn test_load_once_called() {
-            let mut mock_storage = MockStorage::new();
-
-            mock_storage
-                .expect_load()
-                .once()
-                .returning(|| Ok(ConfigData::default()));
-
-            let _ = ConfigManager::new(mock_storage);
-        }
     }
 
     mod config_storage_save {
@@ -124,9 +93,8 @@ mod tests {
 
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();
             let data = ConfigData::default();
-            let result = config_manager.save(data.clone());
+            let result = config_manager.save(&data);
             assert!(result.is_ok());
-            assert_eq!(config_manager.data, data);
         }
 
         #[test]
@@ -147,9 +115,8 @@ mod tests {
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();
             let mut data = ConfigData::default();
             data.set_base_branch("main".to_string()).unwrap();
-            let result = config_manager.save(data.clone());
+            let result = config_manager.save(&data);
             assert!(result.is_err());
-            assert_ne!(config_manager.data, data);
         }
     }
 
@@ -172,11 +139,6 @@ mod tests {
         #[test]
         fn test_returns_error() {
             let mut mock_storage = MockStorage::new();
-
-            mock_storage
-                .expect_load()
-                .times(1)
-                .returning(|| Ok(ConfigData::default()));
 
             mock_storage.expect_load().times(1).returning(|| {
                 Err(ConfigError::Io(IoError::new(
