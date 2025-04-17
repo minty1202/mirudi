@@ -1,4 +1,7 @@
-pub mod data;
+mod data;
+#[cfg(test)]
+pub use data::ConfigData;
+pub use data::ConfigScopeInput;
 pub mod error;
 mod manager;
 mod storage;

@@ -37,7 +37,7 @@ pub fn prompt_base_branch() -> Result<String, Error> {
     )
 }
 
-pub fn with_handle_init<F: Fn() -> Result<String, Error>>(
+fn with_handle_init<F: Fn() -> Result<String, Error>>(
     cmd: InitCommand,
     config: &mut dyn Manager,
     input_fn: F,
@@ -60,7 +60,7 @@ pub fn with_handle_init<F: Fn() -> Result<String, Error>>(
         .map_err(|_| Error::new(ErrorKind::InvalidInput, "ブランチ名の設定に失敗しました"))?;
 
     config
-        .save(data)
+        .save(&data)
         .map_err(|_| Error::new(ErrorKind::Other, "設定の保存に失敗しました"))?;
 
     println!("base_branch を '{}' に設定しました", branch);
@@ -73,8 +73,8 @@ pub fn handle_init(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Err
 
 #[cfg(test)]
 mod tests {
+    use crate::config::ConfigData;
     use crate::config::MockManager;
-    use crate::config::data::ConfigData;
     use std::io::Error;
 
     use super::*;
