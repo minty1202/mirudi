@@ -1,4 +1,5 @@
 mod config;
+mod git;
 mod utils;
 
 use clap::Parser;
@@ -25,9 +26,13 @@ fn main() {
         eprintln!("エラー: {}", err);
         process::exit(1);
     });
+    let git = git::init().unwrap_or_else(|err| {
+        eprintln!("エラー: {}", err);
+        process::exit(1);
+    });
     let handler = MirudiCommandHandler;
 
-    if let Err(e) = handle_command(&handler, cli.command, &mut config) {
+    if let Err(e) = handle_command(&handler, cli.command, &mut config, &git) {
         eprintln!("エラー: {}", e);
         process::exit(1);
     }
