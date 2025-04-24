@@ -30,8 +30,6 @@ export PATH="$HOME/.local/bin:$PATH"
 ## アンインストール方法（誰でもできるよ）
 
 ```bash
-make uninstall
-# もしくは
 rm -f ~/.local/bin/mirudi
 ```
 
