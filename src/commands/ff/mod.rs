@@ -1,28 +1,46 @@
+mod handler;
+mod mode;
+mod range;
+mod scope_input;
+mod validated_config;
+
 use crate::config::Manager;
+use handler::DiffHandler;
+pub use mode::DiffMode;
+use range::Range;
+pub use scope_input::ScopeCommandInput;
 
 use clap::Args;
 use std::io::Error;
 
-#[derive(Args)]
+use crate::git::{GitOperations, core::SourceKind};
+
+#[derive(Args, Debug, PartialEq)]
 pub struct FFCommand {
-    pub target: String,
+    #[command(flatten)]
+    pub scope: ScopeCommandInput,
+
+    #[arg(value_name = "OLD_FILE_RANGE")]
+    pub old_range: String,
+
+    #[arg(value_name = "NEW_FILE_RANGE")]
+    pub new_range: String,
+
+    #[arg(short, long, value_enum, default_value_t = SourceKind::Commit)]
+    pub source: SourceKind,
+
+    #[arg(short, long, value_enum, default_value_t = DiffMode::Slice)]
+    pub mode: DiffMode,
 }
 
-pub fn handle_ff(target: String, _config: &mut dyn Manager) -> Result<(), Error> {
-    println!("FF target: {}", target);
+pub fn handle_ff(
+    cmd: FFCommand,
+    config: &mut dyn Manager,
+    git: &dyn GitOperations,
+) -> Result<(), Error> {
+    cmd.scope.resolve_scope_silently(config, git)?;
+    let data = validated_config::load(config)?;
+    let mut handler = DiffHandler::build(cmd, git, data);
+    handler.exec()?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::MockManager;
-
-    #[test]
-    fn test_returns_ok() {
-        let target = "test_target".to_string();
-        let mut mock_manager = MockManager::new();
-        let result = handle_ff(target.clone(), &mut mock_manager);
-        assert!(result.is_ok());
-    }
 }

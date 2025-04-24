@@ -9,6 +9,31 @@ pub struct ConfigData {
     new_file_path: Option<String>,
 }
 
+pub struct ValidatedConfigData {
+    base_branch: String,
+    current_branch: String,
+    old_file_path: String,
+    new_file_path: String,
+}
+
+impl ValidatedConfigData {
+    pub fn base_branch(&self) -> &String {
+        &self.base_branch
+    }
+
+    pub fn current_branch(&self) -> &String {
+        &self.current_branch
+    }
+
+    pub fn old_file_path(&self) -> &String {
+        &self.old_file_path
+    }
+
+    pub fn new_file_path(&self) -> &String {
+        &self.new_file_path
+    }
+}
+
 pub struct ConfigScopeInput {
     pub current_branch: Option<String>,
     pub old_file_path: Option<String>,
@@ -16,7 +41,6 @@ pub struct ConfigScopeInput {
 }
 
 impl ConfigData {
-    // TODO: あとで使用する
     #[cfg(test)]
     pub fn base_branch(&self) -> Option<String> {
         self.base_branch.clone()
@@ -46,6 +70,32 @@ impl ConfigData {
         self.current_branch = scope.current_branch.or(self.current_branch.clone());
         self.old_file_path = scope.old_file_path.or(self.old_file_path.clone());
         self.new_file_path = scope.new_file_path.or(self.new_file_path.clone());
+    }
+}
+
+impl TryFrom<ConfigData> for ValidatedConfigData {
+    type Error = ConfigError;
+
+    fn try_from(config: ConfigData) -> Result<Self, Self::Error> {
+        let base_branch = config
+            .base_branch
+            .ok_or(ConfigError::MissingField("base_branch".to_string()))?;
+        let current_branch = config
+            .current_branch
+            .ok_or(ConfigError::MissingField("current_branch".to_string()))?;
+        let old_file_path = config
+            .old_file_path
+            .ok_or(ConfigError::MissingField("old_file_path".to_string()))?;
+        let new_file_path = config
+            .new_file_path
+            .ok_or(ConfigError::MissingField("new_file_path".to_string()))?;
+
+        Ok(ValidatedConfigData {
+            base_branch,
+            current_branch,
+            old_file_path,
+            new_file_path,
+        })
     }
 }
 

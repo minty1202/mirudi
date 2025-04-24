@@ -1,13 +1,28 @@
 use crate::git::error::GitError;
+use clap::ValueEnum;
 use git2::Repository;
 
 #[cfg(test)]
 use mockall::automock;
 
+#[derive(ValueEnum, PartialEq, Clone, Debug)]
+pub enum SourceKind {
+    Commit,
+    Worktree,
+}
+
 #[cfg_attr(test, automock)]
 pub trait Provider {
     fn get_current_branch(&self) -> Result<String, GitError>;
     fn list_branches(&self) -> Result<Vec<String>, GitError>;
+    fn extract_lines(
+        &self,
+        branch: &str,
+        file_path: &str,
+        start: usize,
+        end: usize,
+        source: SourceKind,
+    ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
 }
 
@@ -16,6 +31,20 @@ pub struct GitProvider;
 impl GitProvider {
     pub fn new() -> Self {
         Self {}
+    }
+
+    fn extract_lines_from_string(
+        &self,
+        content: &str,
+        start: usize,
+        end: usize,
+    ) -> Result<Vec<String>, GitError> {
+        Ok(content
+            .lines()
+            .skip(start.saturating_sub(1))
+            .take(end.saturating_sub(start) + 1)
+            .map(|s| s.to_string())
+            .collect())
     }
 }
 
@@ -45,6 +74,34 @@ impl Provider for GitProvider {
         Ok(branches)
     }
 
+    fn extract_lines(
+        &self,
+        branch: &str,
+        file_path: &str,
+        start: usize,
+        end: usize,
+        source: SourceKind,
+    ) -> Result<Vec<String>, GitError> {
+        match source {
+            SourceKind::Worktree => {
+                let content =
+                    std::fs::read_to_string(file_path).map_err(|_| GitError::FileNotFound)?;
+                self.extract_lines_from_string(&content, start, end)
+            }
+            SourceKind::Commit => {
+                let repo = Repository::open(".").map_err(|_| GitError::NotGitManaged)?;
+                let spec = format!("{branch}:{file_path}");
+                let object = repo
+                    .revparse_single(&spec)
+                    .map_err(|_| GitError::FileNotFound)?;
+                let blob = object.as_blob().ok_or(GitError::InvalidObjectType)?;
+                let content =
+                    std::str::from_utf8(blob.content()).map_err(|_| GitError::InvalidUtf8)?;
+                self.extract_lines_from_string(content, start, end)
+            }
+        }
+    }
+
     fn is_managed(&self) -> Result<bool, GitError> {
         Repository::open(".")
             .map(|_| true)
@@ -56,6 +113,14 @@ impl Provider for GitProvider {
 pub trait GitOperations<T: Provider = GitProvider> {
     fn get_current_branch(&self) -> Result<String, GitError>;
     fn list_branches(&self) -> Result<Vec<String>, GitError>;
+    fn extract_lines(
+        &self,
+        branch: &str,
+        file_path: &str,
+        start: usize,
+        end: usize,
+        source: Option<SourceKind>,
+    ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
 }
 
@@ -78,6 +143,19 @@ impl<T: Provider> GitOperations for Git<T> {
         self.provider.list_branches()
     }
 
+    fn extract_lines(
+        &self,
+        branch: &str,
+        file_path: &str,
+        start: usize,
+        end: usize,
+        source: Option<SourceKind>,
+    ) -> Result<Vec<String>, GitError> {
+        let source = source.unwrap_or(SourceKind::Commit);
+        self.provider
+            .extract_lines(branch, file_path, start, end, source)
+    }
+
     fn is_managed(&self) -> Result<bool, GitError> {
         self.provider.is_managed()
     }
@@ -87,6 +165,7 @@ impl<T: Provider> GitOperations for Git<T> {
 mod tests {
     use super::*;
     use crate::git::error::GitError;
+    use mockall::predicate::eq;
 
     mod git_get_current_branch {
         use super::*;
@@ -160,6 +239,45 @@ mod tests {
 
             let git = Git::new(mock_provider);
             let result = git.list_branches();
+
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), GitError::NotGitManaged);
+        }
+    }
+
+    mod git_extract_lines {
+        use super::*;
+
+        #[test]
+        fn test_extract_lines() {
+            let mut mock_provider = MockProvider::new();
+            mock_provider
+                .expect_extract_lines()
+                .with(
+                    eq("main"),
+                    eq("file.txt"),
+                    eq(1),
+                    eq(10),
+                    eq(SourceKind::Commit),
+                )
+                .returning(|_, _, _, _, _| Ok(vec!["line1".to_string(), "line2".to_string()]));
+
+            let git = Git::new(mock_provider);
+            let result = git.extract_lines("main", "file.txt", 1, 10, Some(SourceKind::Commit));
+
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap(), vec!["line1", "line2"]);
+        }
+
+        #[test]
+        fn test_extract_lines_not_git_managed() {
+            let mut mock_provider = MockProvider::new();
+            mock_provider
+                .expect_extract_lines()
+                .returning(|_, _, _, _, _| Err(GitError::NotGitManaged));
+
+            let git = Git::new(mock_provider);
+            let result = git.extract_lines("main", "file.txt", 1, 10, Some(SourceKind::Commit));
 
             assert!(result.is_err());
             assert_eq!(result.unwrap_err(), GitError::NotGitManaged);

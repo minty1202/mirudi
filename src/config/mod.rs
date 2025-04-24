@@ -1,6 +1,6 @@
 mod data;
-pub use data::ConfigData;
 pub use data::ConfigScopeInput;
+pub use data::{ConfigData, ValidatedConfigData};
 pub mod error;
 mod manager;
 mod storage;
