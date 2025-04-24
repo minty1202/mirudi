@@ -55,6 +55,7 @@ pub struct HandleBuilder<'a> {
     config: Option<ConfigManagerMut<'a>>,
     prompt_input: Option<PromptInputFn<'a>>,
     get_current_branch_name: Option<BranchNameFetcher<'a>>,
+    no_display: Option<bool>,
 }
 
 impl<'a> HandleBuilder<'a> {
@@ -64,6 +65,7 @@ impl<'a> HandleBuilder<'a> {
             config: None,
             prompt_input: None,
             get_current_branch_name: None,
+            no_display: None,
         }
     }
 
@@ -90,6 +92,11 @@ impl<'a> HandleBuilder<'a> {
         self
     }
 
+    pub fn no_display(mut self, display: bool) -> Self {
+        self.no_display = Some(display);
+        self
+    }
+
     pub fn build(self) -> Result<Handler<'a>, Error> {
         let cmd = self.cmd.ok_or(Error::new(
             std::io::ErrorKind::InvalidInput,
@@ -107,12 +114,14 @@ impl<'a> HandleBuilder<'a> {
             std::io::ErrorKind::InvalidInput,
             "ブランチ名取得関数が指定されていません",
         ))?;
+        let no_display = self.no_display.unwrap_or(false);
 
         Ok(Handler {
             cmd,
             config,
             prompt_input,
             get_current_branch_name,
+            no_display,
         })
     }
 }
@@ -122,6 +131,7 @@ pub struct Handler<'a> {
     config: ConfigManagerMut<'a>,
     prompt_input: PromptInputFn<'a>,
     get_current_branch_name: BranchNameFetcher<'a>,
+    no_display: bool,
 }
 
 impl Handler<'_> {
@@ -162,6 +172,10 @@ impl Handler<'_> {
     }
 
     fn display_completion(&self, new_data: &ConfigData) {
+        if self.no_display {
+            return;
+        }
+
         println!("\n設定が完了しました！");
         println!(
             "- ブランチ: {}",
@@ -346,6 +360,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.exec();
             assert!(result.is_ok());
@@ -365,6 +380,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.get_current_data();
             assert!(result.is_ok());
@@ -382,6 +398,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.get_current_data();
             assert!(result.is_err());
@@ -396,6 +413,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
 
             let result = handler.get_input();
@@ -430,6 +448,7 @@ mod tests {
                 config: &mut config,
                 prompt_input: boxed_prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.get_input();
             assert!(result.is_ok());
@@ -447,6 +466,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.save_data(&data);
             assert!(result.is_ok());
@@ -467,6 +487,7 @@ mod tests {
                 config: &mut config,
                 prompt_input,
                 get_current_branch_name,
+                no_display: true,
             };
             let result = handler.save_data(&data);
             assert!(result.is_err());

@@ -28,7 +28,7 @@ pub fn handle_command(
     git: &dyn GitOperations,
 ) -> Result<(), Error> {
     match command {
-        Commands::FF(cmd) => handler.handle_ff(cmd.target, config),
+        Commands::FF(cmd) => handler.handle_ff(cmd, config, git),
         Commands::Init(cmd) => handler.handle_init(cmd, config),
         Commands::Scope(cmd) => handler.handle_scope(cmd, config, git),
     }
@@ -39,14 +39,15 @@ mod tests {
     use super::*;
     use std::cell::RefCell;
 
+    use crate::commands::ff::{DiffMode, ScopeCommandInput};
     use crate::config::{Manager, MockManager};
-    use crate::git::core::MockGitOperations;
+    use crate::git::core::{MockGitOperations, SourceKind};
 
     struct MockCommandHandler {
         ff_called: RefCell<bool>,
         init_called: RefCell<bool>,
         scope_called: RefCell<bool>,
-        ff_target: RefCell<Option<String>>,
+        ff_target: RefCell<Option<FFCommand>>,
         init_base: RefCell<Option<String>>,
         scope_target: RefCell<Option<ScopeCommand>>,
     }
@@ -65,9 +66,14 @@ mod tests {
     }
 
     impl CommandHandler for MockCommandHandler {
-        fn handle_ff(&self, target: String, _config: &mut dyn Manager) -> Result<(), Error> {
+        fn handle_ff(
+            &self,
+            cmd: FFCommand,
+            _config: &mut dyn Manager,
+            _git: &dyn GitOperations,
+        ) -> Result<(), Error> {
             *self.ff_called.borrow_mut() = true;
-            *self.ff_target.borrow_mut() = Some(target);
+            *self.ff_target.borrow_mut() = Some(cmd);
             Ok(())
         }
 
@@ -94,20 +100,29 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_ff_command_with_target() {
+    fn test_handle_ff_command() {
         let handler = MockCommandHandler::new();
         let mut config = MockManager::new();
         let git = MockGitOperations::new();
-        let target = "test_target".to_string();
+
         let command = Commands::FF(FFCommand {
-            target: target.clone(),
+            scope: ScopeCommandInput {
+                current: true,
+                branch: Some("test_branch".to_string()),
+                old_path: Some("old_path".to_string()),
+                new_path: Some("new_path".to_string()),
+                path: None,
+            },
+            source: SourceKind::Commit,
+            old_range: "1-10".to_string(),
+            new_range: "11-20".to_string(),
+            mode: DiffMode::Lines,
         });
 
         let result = handle_command(&handler, command, &mut config, &git);
 
         assert!(result.is_ok());
         assert!(*handler.ff_called.borrow());
-        assert_eq!(handler.ff_target.borrow().as_ref(), Some(&target));
     }
 
     #[test]

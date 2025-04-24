@@ -1,4 +1,4 @@
-use crate::commands::ff::handle_ff;
+use crate::commands::ff::{FFCommand, handle_ff};
 use crate::commands::init::{InitCommand, handle_init};
 use crate::commands::scope::{ScopeCommand, handle_scope};
 use crate::config::Manager;
@@ -9,7 +9,12 @@ use std::io::Error;
 pub struct MirudiCommandHandler;
 
 pub trait CommandHandler {
-    fn handle_ff(&self, target: String, config: &mut dyn Manager) -> Result<(), Error>;
+    fn handle_ff(
+        &self,
+        cmd: FFCommand,
+        config: &mut dyn Manager,
+        git: &dyn GitOperations,
+    ) -> Result<(), Error>;
     fn handle_init(&self, cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error>;
     fn handle_scope(
         &self,
@@ -20,8 +25,13 @@ pub trait CommandHandler {
 }
 
 impl CommandHandler for MirudiCommandHandler {
-    fn handle_ff(&self, target: String, config: &mut dyn Manager) -> Result<(), Error> {
-        handle_ff(target, config)
+    fn handle_ff(
+        &self,
+        cmd: FFCommand,
+        config: &mut dyn Manager,
+        git: &dyn GitOperations,
+    ) -> Result<(), Error> {
+        handle_ff(cmd, config, git)
     }
 
     fn handle_init(&self, cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {

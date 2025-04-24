@@ -2,6 +2,9 @@
 pub enum GitError {
     EmptyBranchName,
     NotGitManaged,
+    FileNotFound,
+    InvalidObjectType,
+    InvalidUtf8,
 }
 
 impl std::fmt::Display for GitError {
@@ -9,6 +12,9 @@ impl std::fmt::Display for GitError {
         match self {
             GitError::EmptyBranchName => write!(f, "ブランチ名が空です"),
             GitError::NotGitManaged => write!(f, "Git 管理されていないディレクトリです"),
+            GitError::FileNotFound => write!(f, "ファイルが見つかりません"),
+            GitError::InvalidObjectType => write!(f, "無効なオブジェクトタイプです"),
+            GitError::InvalidUtf8 => write!(f, "無効な UTF-8 文字列です"),
         }
     }
 }
