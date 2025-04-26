@@ -6,7 +6,7 @@ mod utils;
 use clap::Parser;
 mod commands;
 
-use commands::{Commands, handle_command, handler::MirudiCommandHandler};
+use commands::{Commands, handle_command};
 
 use std::process;
 
@@ -31,9 +31,8 @@ fn main() {
         eprintln!("エラー: {}", err);
         process::exit(1);
     });
-    let handler = MirudiCommandHandler;
 
-    if let Err(e) = handle_command(&handler, cli.command, &mut config, &git) {
+    if let Err(e) = handle_command(cli.command, &mut config, &git) {
         eprintln!("エラー: {}", e);
         process::exit(1);
     }
