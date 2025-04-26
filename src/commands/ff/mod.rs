@@ -33,7 +33,7 @@ pub struct FFCommand {
     pub mode: DiffMode,
 }
 
-pub fn handle_ff(
+pub fn handle(
     cmd: FFCommand,
     config: &mut dyn Manager,
     git: &dyn GitOperations,

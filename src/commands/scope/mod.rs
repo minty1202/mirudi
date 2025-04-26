@@ -27,7 +27,7 @@ pub fn run_scope_silently(
     Ok(())
 }
 
-pub fn handle_scope(
+pub fn handle(
     cmd: ScopeCommand,
     config: &mut dyn Manager,
     git: &dyn GitOperations,
@@ -70,7 +70,7 @@ mod tests {
         git.expect_get_current_branch()
             .returning(|| Ok("test_branch".to_string()));
 
-        let result = handle_scope(cmd, &mut config, &git);
+        let result = handle(cmd, &mut config, &git);
         assert!(result.is_ok());
     }
 

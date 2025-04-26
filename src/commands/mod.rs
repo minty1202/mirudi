@@ -28,9 +28,9 @@ pub fn handle_command(
     git: &dyn GitOperations,
 ) -> Result<(), Error> {
     match command {
-        Commands::FF(cmd) => ff::handle_ff(cmd, config, git),
-        Commands::Init(cmd) => init::handle_init(cmd, config),
-        Commands::Scope(cmd) => scope::handle_scope(cmd, config, git),
-        Commands::Web(cmd) => web::handle_web(cmd, config, git),
+        Commands::FF(cmd) => ff::handle(cmd, config, git),
+        Commands::Init(cmd) => init::handle(cmd, config),
+        Commands::Scope(cmd) => scope::handle(cmd, config, git),
+        Commands::Web(cmd) => web::handle(cmd, config, git),
     }
 }

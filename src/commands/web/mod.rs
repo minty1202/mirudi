@@ -13,7 +13,7 @@ pub struct WebCommand {
     pub port: u16,
 }
 
-pub fn handle_web(
+pub fn handle(
     cmd: WebCommand,
     config: &mut dyn Manager,
     git: &dyn GitOperations,

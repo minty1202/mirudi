@@ -67,7 +67,7 @@ fn with_handle_init<F: Fn() -> Result<String, Error>>(
     Ok(())
 }
 
-pub fn handle_init(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {
+pub fn handle(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {
     with_handle_init(cmd, config, prompt_base_branch)
 }
 
