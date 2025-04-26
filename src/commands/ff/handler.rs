@@ -4,7 +4,7 @@ use super::Range;
 
 use crate::config::ValidatedConfigData;
 use crate::diff::{Diff, DiffProvider};
-use crate::git::GitOperations;
+use crate::git::{GitOperations, core::SourceKind};
 
 use std::io::Error;
 
@@ -22,10 +22,32 @@ impl<'a> DiffHandler<'a> {
 
 impl DiffHandler<'_> {
     pub fn exec(&mut self) -> Result<(), Error> {
+        self.validate_source()?;
         let old_lines = self.extract_old_lines()?;
         let new_lines = self.extract_new_lines()?;
         let diff_result = self.generate_diff(old_lines, new_lines)?;
         self.display_diff(diff_result);
+        Ok(())
+    }
+
+    fn validate_source(&self) -> Result<(), Error> {
+        let git_branch = self.git.get_current_branch().map_err(|e| {
+            Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to get current branch: {}", e),
+            )
+        })?;
+
+        if self.cmd.source == SourceKind::Worktree && *self.data.current_branch() != git_branch {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "比較するブランチが現在のブランチと異なる場合、--source=worktree を指定することはできません。現在のブランチ: {}, 指定されたブランチ: {}",
+                    self.data.current_branch(),
+                    git_branch
+                ),
+            ));
+        }
         Ok(())
     }
 
@@ -125,6 +147,52 @@ mod tests {
             old_path: Some("old_file.txt".to_string()),
             new_path: Some("new_file.txt".to_string()),
             path: None,
+        }
+    }
+
+    mod validate_source {
+        use super::*;
+
+        #[test]
+        fn returns_ok() {
+            let mut git = MockGitOperations::new();
+            let scope = setup_scope_input();
+            let data = setup_data();
+            let cmd = FFCommand {
+                scope,
+                old_range: "1-10".to_string(),
+                new_range: "11-20".to_string(),
+                source: SourceKind::Worktree,
+                mode: DiffMode::Lines,
+            };
+
+            git.expect_get_current_branch()
+                .returning(|| Ok("feature".to_string()));
+
+            let handler = DiffHandler::build(cmd, &git, data);
+            let result = handler.validate_source();
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn returns_error() {
+            let mut git = MockGitOperations::new();
+            let scope = setup_scope_input();
+            let data = setup_data();
+            let cmd = FFCommand {
+                scope,
+                old_range: "1-10".to_string(),
+                new_range: "11-20".to_string(),
+                source: SourceKind::Worktree,
+                mode: DiffMode::Lines,
+            };
+
+            git.expect_get_current_branch()
+                .returning(|| Ok("main".to_string()));
+
+            let handler = DiffHandler::build(cmd, &git, data);
+            let result = handler.validate_source();
+            assert!(result.is_err());
         }
     }
 
