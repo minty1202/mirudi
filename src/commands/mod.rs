@@ -6,6 +6,8 @@ pub mod handler;
 pub use handler::CommandHandler;
 mod scope;
 pub use scope::ScopeCommand;
+mod web;
+pub use web::WebCommand;
 
 use crate::config::Manager;
 use crate::git::GitOperations;
@@ -19,6 +21,7 @@ pub enum Commands {
     Init(InitCommand),
     #[command(alias = "sc")]
     Scope(ScopeCommand),
+    Web(WebCommand),
 }
 
 pub fn handle_command(
@@ -31,6 +34,7 @@ pub fn handle_command(
         Commands::FF(cmd) => handler.handle_ff(cmd, config, git),
         Commands::Init(cmd) => handler.handle_init(cmd, config),
         Commands::Scope(cmd) => handler.handle_scope(cmd, config, git),
+        Commands::Web(cmd) => handler.handle_web(cmd),
     }
 }
 
@@ -95,6 +99,9 @@ mod tests {
         ) -> Result<(), Error> {
             *self.scope_called.borrow_mut() = true;
             *self.scope_target.borrow_mut() = Some(command);
+            Ok(())
+        }
+        fn handle_web(&self, _cmd: WebCommand) -> Result<(), Error> {
             Ok(())
         }
     }
