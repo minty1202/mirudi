@@ -34,7 +34,7 @@ pub fn handle_command(
         Commands::FF(cmd) => handler.handle_ff(cmd, config, git),
         Commands::Init(cmd) => handler.handle_init(cmd, config),
         Commands::Scope(cmd) => handler.handle_scope(cmd, config, git),
-        Commands::Web(cmd) => handler.handle_web(cmd),
+        Commands::Web(cmd) => handler.handle_web(cmd, config, git),
     }
 }
 
@@ -101,7 +101,7 @@ mod tests {
             *self.scope_target.borrow_mut() = Some(command);
             Ok(())
         }
-        fn handle_web(&self, _cmd: WebCommand) -> Result<(), Error> {
+        fn handle_web(&self, _cmd: WebCommand, _config: &mut dyn Manager, _git: &dyn GitOperations) -> Result<(), Error> {
             Ok(())
         }
     }

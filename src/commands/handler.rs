@@ -23,7 +23,12 @@ pub trait CommandHandler {
         config: &mut dyn Manager,
         git: &dyn GitOperations,
     ) -> Result<(), Error>;
-    fn handle_web(&self, cmd: WebCommand) -> Result<(), Error>;
+    fn handle_web(
+        &self,
+        cmd: WebCommand,
+        config: &mut dyn Manager,
+        git: &dyn GitOperations,
+    ) -> Result<(), Error>;
 }
 
 impl CommandHandler for MirudiCommandHandler {
@@ -49,7 +54,7 @@ impl CommandHandler for MirudiCommandHandler {
         handle_scope(cmd, config, git)
     }
 
-    fn handle_web(&self, cmd: WebCommand) -> Result<(), Error> {
-        handle_web(cmd)
+    fn handle_web(&self, cmd: WebCommand, config: &mut dyn Manager, git: &dyn GitOperations) -> Result<(), Error> {
+        handle_web(cmd, config, git)
     }
 }
