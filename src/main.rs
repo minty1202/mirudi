@@ -2,11 +2,10 @@ mod config;
 mod diff;
 mod git;
 mod utils;
-
-use clap::Parser;
 mod commands;
 
-use commands::{Commands, handle_command};
+use clap::Parser;
+use commands::{handle_cli_command, handle_web_command, Commands};
 
 use std::process;
 
@@ -32,8 +31,18 @@ fn main() {
         process::exit(1);
     });
 
-    if let Err(e) = handle_command(cli.command, &mut config, &git) {
-        eprintln!("エラー: {}", e);
-        process::exit(1);
+    match cli.command {
+        Commands::Cli(command) => {
+            if let Err(e) = handle_cli_command(command, &mut config, &git) {
+                eprintln!("エラー: {}", e);
+                process::exit(1);
+            }
+        }
+        Commands::Server(command) => {
+            if let Err(e) = handle_web_command(command, &mut config, &git) {
+                eprintln!("エラー: {}", e);
+                process::exit(1);
+            }
+        }
     }
 }

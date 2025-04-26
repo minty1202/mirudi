@@ -14,23 +14,45 @@ use clap::Subcommand;
 use std::io::Error;
 
 #[derive(Subcommand)]
-pub enum Commands {
+pub enum CliCommands {
     FF(FFCommand),
     Init(InitCommand),
     #[command(alias = "sc")]
     Scope(ScopeCommand),
+}
+
+#[derive(Subcommand)]
+pub enum ServerCommands {
     Web(WebCommand),
 }
 
-pub fn handle_command(
-    command: Commands,
+#[derive(Subcommand)]
+pub enum Commands {
+    #[command(flatten)]
+    Cli(CliCommands),
+
+    #[command(flatten)]
+    Server(ServerCommands),
+}
+
+pub fn handle_cli_command(
+    command: CliCommands,
     config: &mut dyn Manager,
     git: &dyn GitOperations,
 ) -> Result<(), Error> {
     match command {
-        Commands::FF(cmd) => ff::handle(cmd, config, git),
-        Commands::Init(cmd) => init::handle(cmd, config),
-        Commands::Scope(cmd) => scope::handle(cmd, config, git),
-        Commands::Web(cmd) => web::handle(cmd, config, git),
+        CliCommands::FF(cmd) => ff::handle(cmd, config, git),
+        CliCommands::Init(cmd) => init::handle(cmd, config),
+        CliCommands::Scope(cmd) => scope::handle(cmd, config, git),
+    }
+}
+
+pub fn handle_web_command(
+    command: ServerCommands,
+    config: &mut dyn Manager,
+    git: &dyn GitOperations,
+) -> Result<(), Error> {
+    match command {
+        ServerCommands::Web(cmd) => web::handle(cmd, config, git),
     }
 }
