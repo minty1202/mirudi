@@ -1,6 +1,7 @@
 use crate::commands::ff::{FFCommand, handle_ff};
 use crate::commands::init::{InitCommand, handle_init};
 use crate::commands::scope::{ScopeCommand, handle_scope};
+use crate::commands::web::{WebCommand, handle_web};
 use crate::config::Manager;
 use crate::git::GitOperations;
 
@@ -22,6 +23,7 @@ pub trait CommandHandler {
         config: &mut dyn Manager,
         git: &dyn GitOperations,
     ) -> Result<(), Error>;
+    fn handle_web(&self, cmd: WebCommand) -> Result<(), Error>;
 }
 
 impl CommandHandler for MirudiCommandHandler {
@@ -45,5 +47,9 @@ impl CommandHandler for MirudiCommandHandler {
         git: &dyn GitOperations,
     ) -> Result<(), Error> {
         handle_scope(cmd, config, git)
+    }
+
+    fn handle_web(&self, cmd: WebCommand) -> Result<(), Error> {
+        handle_web(cmd)
     }
 }
