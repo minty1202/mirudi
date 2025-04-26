@@ -1,3 +1,5 @@
+use crate::config::Manager;
+use crate::git::core::GitWeb;
 use super::assets::WebAssets;
 use axum::{
     Router,
@@ -9,12 +11,48 @@ use axum::{
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Notify;
+use axum::Json;
+use std::io;
+use axum::extract::State;
 
-pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
+#[derive(Clone)]
+pub struct WebServerState {
+    pub git: Arc<GitWeb>,
+    pub base_branch: String,
+    pub target_branch: String,
+}
+
+pub async fn start_server(
+    port: u16,
+    config: &mut dyn Manager,
+    git: Arc<GitWeb>,
+) -> Result<(), Box<dyn std::error::Error>> {
+
+    let data = config.load().map_err(|e| {
+        io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to load config: {}", e),
+        )
+    })?;
+    let base = data.base_branch()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "base_branchが設定されていません。mirudi init を先に実行してください"))?;
+
+    let target = data.current_branch()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "current_branchが設定されていません。mirudi scope を先に実行してください"))?;
+
+    let state = WebServerState {
+        git,
+        base_branch: base,
+        target_branch: target,
+    };
+
+    let state = Arc::new(state);
+
     let shutdown_notify = Arc::new(Notify::new());
     let shutdown_notify_for_exit = shutdown_notify.clone();
 
-    let api_routes = Router::new().route("/sample", get(|| async { "Hello, World!" }));
+    let api_routes = Router::new()
+        .route("/changes", get(get_changed_files));
 
     let app = Router::new()
         .nest("/api", api_routes)
@@ -39,7 +77,7 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
 
     axum::serve(
         tokio::net::TcpListener::bind(&addr).await?,
-        app.into_make_service(),
+        app.with_state(state)
     )
     .with_graceful_shutdown(async move {
         shutdown_notify.notified().await;
@@ -73,5 +111,23 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
                 .body(Body::from("Not found"))
                 .unwrap(),
         },
+    }
+}
+
+async fn get_changed_files(
+    State(state): State<Arc<WebServerState>>,
+) -> impl IntoResponse {
+    let base = &state.base_branch;
+    let target = &state.target_branch;
+    let git = state.git.clone(); 
+
+    match git.list_changed_files(base, target) {
+        Ok(files) => {
+            Json(files).into_response()
+        }
+        Err(e) => {
+            eprintln!("エラー発生: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "変更ファイル取得失敗").into_response()
+        }
     }
 }

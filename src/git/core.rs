@@ -1,6 +1,6 @@
 use crate::git::error::GitError;
 use clap::ValueEnum;
-use git2::Repository;
+use git2::{Repository, DiffOptions};
 
 #[cfg(test)]
 use mockall::automock;
@@ -24,9 +24,21 @@ pub trait Provider {
         source: SourceKind,
     ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
+    fn for_server(&self) -> GitWebProvider;
+}
+
+pub trait WebProvider {
+    fn list_changed_files(
+        &self,
+        base_branch: &str,
+        target_branch: &str,
+    ) -> Result<Vec<String>, GitError>;
 }
 
 pub struct GitProvider;
+
+#[derive(Clone)]
+pub struct GitWebProvider;
 
 impl GitProvider {
     pub fn new() -> Self {
@@ -107,10 +119,56 @@ impl Provider for GitProvider {
             .map(|_| true)
             .map_err(|_| GitError::NotGitManaged)
     }
+
+    fn for_server(&self) -> GitWebProvider {
+        GitWebProvider
+    }
+}
+
+impl WebProvider for GitWebProvider {
+
+    fn list_changed_files(
+        &self,
+        base_branch: &str,
+        target_branch: &str,
+    ) -> Result<Vec<String>, GitError> {
+        let repo = Repository::open(".").map_err(|_| GitError::NotGitManaged)?;
+    
+        let base_object = repo.revparse_single(base_branch).map_err(|_| GitError::FileNotFound)?;
+        let target_object = repo.revparse_single(target_branch).map_err(|_| GitError::FileNotFound)?;
+    
+        let base_tree = base_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
+        let target_tree = target_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
+    
+        let mut diff_opts = DiffOptions::new(); 
+        let diff = repo.diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
+            .map_err(|_| GitError::DiffExtractionFailed)?;
+    
+        let mut files = Vec::new();
+    
+        diff.foreach(
+            &mut |delta, _progress| {
+                if let Some(path) = delta.new_file().path() {
+                    files.push(path.to_string_lossy().to_string());
+                }
+                true
+            },
+            None,
+            None,
+            None,
+        ).map_err(|_| GitError::DiffExtractionFailed)?;
+        
+        // ここで差分がない場合も正常に空のリストを返す
+        Ok(files)
+    }
+}
+
+pub struct GitWeb<T: WebProvider = GitWebProvider> {
+    provider: T,
 }
 
 #[cfg_attr(test, automock)]
-pub trait GitOperations<T: Provider = GitProvider> {
+pub trait GitOperations<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
     fn get_current_branch(&self) -> Result<String, GitError>;
     fn list_branches(&self) -> Result<Vec<String>, GitError>;
     fn extract_lines(
@@ -122,19 +180,22 @@ pub trait GitOperations<T: Provider = GitProvider> {
         source: Option<SourceKind>,
     ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
+    fn for_server(&self) -> GitWeb<U>;
 }
 
-pub struct Git<T: Provider = GitProvider> {
+pub struct Git<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
     provider: T,
+    web_provider: U,
 }
 
 impl<T: Provider> Git<T> {
     pub fn new(provider: T) -> Self {
-        Self { provider }
+        let web_provider = provider.for_server();
+        Self { provider, web_provider }
     }
 }
 
-impl<T: Provider> GitOperations for Git<T> {
+impl<T: Provider, U: WebProvider + Clone> GitOperations<T, U> for Git<T, U> {
     fn get_current_branch(&self) -> Result<String, GitError> {
         self.provider.get_current_branch()
     }
@@ -158,6 +219,22 @@ impl<T: Provider> GitOperations for Git<T> {
 
     fn is_managed(&self) -> Result<bool, GitError> {
         self.provider.is_managed()
+    }
+
+    fn for_server(&self) -> GitWeb<U> {
+        GitWeb {
+            provider: self.web_provider.clone(),
+        }
+    }
+}
+
+impl<T: WebProvider> GitWeb<T> {
+    pub fn list_changed_files(
+        &self,
+        base_branch: &str,
+        target_branch: &str,
+    ) -> Result<Vec<String>, GitError> {
+        self.provider.list_changed_files(base_branch, target_branch)
     }
 }
 
