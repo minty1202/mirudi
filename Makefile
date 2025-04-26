@@ -1,7 +1,10 @@
 BINARY_NAME=mirudi
 INSTALL_PATH=${HOME}/.local/bin
 
-build:
+frontend-build:
+	cd web && pnpm build
+
+build: frontend-build
 	cargo build --release
 
 install: build
