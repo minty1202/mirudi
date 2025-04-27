@@ -1,5 +1,5 @@
 use clap::Args;
-use std::io::Error;
+use crate::commands::error::CommandError;
 
 #[derive(Debug, Args, PartialEq)]
 pub struct ScopeCommand {
@@ -20,11 +20,11 @@ pub struct ScopeCommand {
 }
 
 pub trait ScopeInputResolver {
-    fn resolve_old_path(&self) -> Result<Option<String>, Error>;
-    fn resolve_new_path(&self) -> Result<Option<String>, Error>;
-    fn resolve_branch<F>(&self, get_fn: F) -> Result<Option<String>, Error>
+    fn resolve_old_path(&self) -> Result<Option<String>, CommandError>;
+    fn resolve_new_path(&self) -> Result<Option<String>, CommandError>;
+    fn resolve_branch<F>(&self, get_fn: F) -> Result<Option<String>, CommandError>
     where
-        F: Fn() -> Result<String, Error>;
+        F: Fn() -> Result<String, CommandError>;
     fn is_empty(&self) -> bool;
 }
 
@@ -33,12 +33,9 @@ impl ScopeCommand {
         &self,
         primary: &Option<String>,
         shared: &Option<String>,
-    ) -> Result<Option<String>, Error> {
+    ) -> Result<Option<String>, CommandError> {
         if primary.is_some() && shared.is_some() {
-            return Err(Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "new または old と path は併用できません",
-            ));
+            return Err(CommandError::InvalidInput("new または old と path は併用できません".to_string()));
         }
 
         Ok(primary.clone().or_else(|| shared.clone()))
@@ -46,29 +43,27 @@ impl ScopeCommand {
 }
 
 impl ScopeInputResolver for ScopeCommand {
-    fn resolve_old_path(&self) -> Result<Option<String>, Error> {
+    fn resolve_old_path(&self) -> Result<Option<String>, CommandError> {
         self.resolve_path(&self.old, &self.path)
     }
 
-    fn resolve_new_path(&self) -> Result<Option<String>, Error> {
+    fn resolve_new_path(&self) -> Result<Option<String>, CommandError> {
         self.resolve_path(&self.new, &self.path)
     }
 
-    fn resolve_branch<F>(&self, get_fn: F) -> Result<Option<String>, Error>
+    fn resolve_branch<F>(&self, get_fn: F) -> Result<Option<String>, CommandError>
     where
-        F: Fn() -> Result<String, Error>,
+        F: Fn() -> Result<String, CommandError>,
     {
         match (&self.current, &self.branch) {
-            (true, Some(_)) => Err(Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "current と branch は同時に指定できません",
+            (true, Some(_)) => Err(CommandError::InvalidInput(
+                "current と branch は同時に指定できません".to_string()
             )),
             (true, None) => Ok(Some(get_fn()?)),
             (false, Some(branch)) => {
                 if branch.trim().is_empty() {
-                    Err(Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        "空のブランチ名は無効です",
+                    Err(CommandError::InvalidInput(
+                        "空のブランチ名は無効です".to_string()
                     ))
                 } else {
                     Ok(Some(branch.clone()))
@@ -122,7 +117,6 @@ mod tests {
 
             let result = cmd.resolve_old_path();
             let err = result.unwrap_err();
-            assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
             assert_eq!(err.to_string(), "new または old と path は併用できません");
         }
 
@@ -170,7 +164,6 @@ mod tests {
             };
             let result = cmd.resolve_new_path();
             let err = result.unwrap_err();
-            assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
             assert_eq!(err.to_string(), "new または old と path は併用できません");
         }
 
@@ -196,7 +189,7 @@ mod tests {
             static CALLED: RefCell<bool> = const { RefCell::new(false) };
         }
 
-        fn mock_get_branch() -> Result<String, Error> {
+        fn mock_get_branch() -> Result<String, CommandError> {
             CALLED.with(|called| {
                 *called.borrow_mut() = true;
             });
@@ -215,7 +208,6 @@ mod tests {
 
             let result = cmd.resolve_branch(|| Ok("test_branch".to_string()));
             let err = result.unwrap_err();
-            assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
             assert_eq!(err.to_string(), "current と branch は同時に指定できません");
         }
 
@@ -248,7 +240,6 @@ mod tests {
             };
             let result = cmd.resolve_branch(|| Ok("test_branch".to_string()));
             let err = result.unwrap_err();
-            assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
             assert_eq!(err.to_string(), "空のブランチ名は無効です");
         }
 

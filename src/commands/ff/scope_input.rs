@@ -1,6 +1,7 @@
 use clap::Args;
 
 use crate::commands::scope::{ScopeCommand, ScopeInputResolver, run_scope_silently};
+use crate::commands::error::CommandError;
 
 #[derive(Debug, Args, PartialEq)]
 pub struct ScopeCommandInput {
@@ -35,7 +36,7 @@ impl ScopeCommandInput {
         &self,
         config: &mut dyn crate::config::Manager,
         git: &dyn crate::git::GitProvider,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<(), CommandError> {
         let cmd = self.to_scope_command();
         if cmd.is_empty() {
             return Ok(());

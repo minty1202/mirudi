@@ -1,7 +1,8 @@
 pub mod core;
-pub mod error;
+mod error;
 
 pub use core::*;
+pub use error::*;
 
 pub fn init() -> Result<Git, error::GitError> {
     let git = Git::new();

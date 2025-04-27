@@ -7,11 +7,14 @@ pub use scope::ScopeCommand;
 mod web;
 pub use web::WebCommand;
 
+mod error;
+
 use crate::config::Manager;
 use crate::git::{GitProvider, core::GitWeb};
 
 use clap::Subcommand;
-use std::io::Error;
+
+use error::CommandError;
 
 #[derive(Subcommand)]
 pub enum CliCommands {
@@ -39,7 +42,7 @@ pub fn handle_cli_command(
     command: CliCommands,
     config: &mut dyn Manager,
     git: &dyn GitProvider,
-) -> Result<(), Error> {
+) -> Result<(), CommandError> {
     match command {
         CliCommands::FF(cmd) => ff::handle(cmd, config, git),
         CliCommands::Init(cmd) => init::handle(cmd, config),
@@ -51,7 +54,7 @@ pub fn handle_web_command(
     command: ServerCommands,
     config: &mut dyn Manager,
     git: GitWeb,
-) -> Result<(), Error> {
+) -> Result<(), CommandError> {
     match command {
         ServerCommands::Web(cmd) => web::handle(cmd, config, git),
     }

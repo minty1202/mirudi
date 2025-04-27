@@ -3,17 +3,17 @@ pub mod handler;
 mod prompt_input;
 
 pub use core::{ScopeCommand, ScopeInputResolver};
-use std::io::Error;
 
 use crate::config::Manager;
 use crate::git::GitProvider;
 use handler::{DepsBuilder, HandleBuilder};
+use crate::commands::error::CommandError;
 
 pub fn run_scope_silently(
     cmd: ScopeCommand,
     config: &mut dyn crate::config::Manager,
-    git: &dyn crate::git::GitProvider,
-) -> Result<(), std::io::Error> {
+    git: &dyn GitProvider,
+) -> Result<(), CommandError> {
     let deps = DepsBuilder::new().git(git).build()?;
     let mut handler = HandleBuilder::new()
         .cmd(cmd)
@@ -31,7 +31,7 @@ pub fn handle(
     cmd: ScopeCommand,
     config: &mut dyn Manager,
     git: &dyn GitProvider,
-) -> Result<(), Error> {
+) -> Result<(), CommandError> {
     let deps = DepsBuilder::new().git(git).build()?;
     let mut handler = HandleBuilder::new()
         .cmd(cmd)

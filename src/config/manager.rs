@@ -47,8 +47,6 @@ mod tests {
     use crate::config::error::ConfigError;
     use crate::config::storage::MockStorage;
 
-    use std::io::{Error as IoError, ErrorKind as IoErrorKind};
-
     #[test]
     fn test_config_manager_get_default() {
         let mut mock_storage = MockStorage::new();
@@ -106,10 +104,7 @@ mod tests {
                 .returning(|| Ok(ConfigData::default()));
 
             mock_storage.expect_save().returning(|_| {
-                Err(ConfigError::Io(IoError::new(
-                    IoErrorKind::Other,
-                    "テストエラー",
-                )))
+                Err(ConfigError::Test)
             });
 
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();
@@ -141,10 +136,7 @@ mod tests {
             let mut mock_storage = MockStorage::new();
 
             mock_storage.expect_load().times(1).returning(|| {
-                Err(ConfigError::Io(IoError::new(
-                    IoErrorKind::Other,
-                    "テストエラー",
-                )))
+                Err(ConfigError::Test)
             });
 
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();

@@ -1,6 +1,6 @@
 use crate::config::{ConfigData, ConfigScopeInput, Manager};
 use crate::git::GitProvider;
-use std::io::{Error, ErrorKind};
+use crate::commands::error::CommandError;
 
 use super::core::{ScopeCommand, ScopeInputResolver};
 use super::prompt_input::PromptInputRunner;
@@ -9,7 +9,7 @@ use super::prompt_input::Runner;
 type ConfigManagerMut<'a> = &'a mut dyn Manager;
 type MaybeGitOps<'a> = Option<&'a dyn GitProvider>;
 type PromptInputFn<'a> = Box<dyn Runner + 'a>;
-type BranchNameFetcher<'a> = Box<dyn Fn() -> Result<String, Error> + 'a>;
+type BranchNameFetcher<'a> = Box<dyn Fn() -> Result<String, CommandError> + 'a>;
 
 pub struct Deps<'a> {
     pub prompt_input: PromptInputFn<'a>,
@@ -30,15 +30,13 @@ impl<'a> DepsBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Result<Deps<'a>, Error> {
-        let git = self.git.ok_or(Error::new(
-            ErrorKind::InvalidInput,
-            "git が設定されていません",
+    pub fn build(self) -> Result<Deps<'a>, CommandError> {
+        let git = self.git.ok_or(CommandError::InternalError(
+            "Gitプロバイダが指定されていません".to_string(),
         ))?;
-
         let get_current_branch = Box::new(move || {
             git.get_current_branch()
-                .map_err(|_| Error::new(ErrorKind::Other, "Git のブランチ名の取得に失敗しました"))
+                .map_err(CommandError::Git)
         });
 
         let prompt_input = Box::new(PromptInputRunner::new(git)) as Box<dyn Runner>;
@@ -86,7 +84,7 @@ impl<'a> HandleBuilder<'a> {
 
     pub fn get_current_branch_name<F>(mut self, get_fn: F) -> Self
     where
-        F: Fn() -> Result<String, Error> + 'a,
+        F: Fn() -> Result<String, CommandError> + 'a,
     {
         self.get_current_branch_name = Some(Box::new(get_fn));
         self
@@ -97,22 +95,18 @@ impl<'a> HandleBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Result<Handler<'a>, Error> {
-        let cmd = self.cmd.ok_or(Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "コマンドが指定されていません",
+    pub fn build(self) -> Result<Handler<'a>, CommandError> {
+        let cmd = self.cmd.ok_or(CommandError::InternalError("コマンドが指定されていません".to_string()))?;
+
+        let config= self.config
+            .ok_or(CommandError::InternalError(
+                "設定が指定されていません".to_string(),
+            ))?;
+        let prompt_input = self.prompt_input.ok_or(CommandError::InternalError(
+            "プロンプト入力が指定されていません".to_string(),
         ))?;
-        let config = self.config.ok_or(Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "設定が指定されていません",
-        ))?;
-        let prompt_input = self.prompt_input.ok_or(Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "プロンプト入力が指定されていません",
-        ))?;
-        let get_current_branch_name = self.get_current_branch_name.ok_or(Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "ブランチ名取得関数が指定されていません",
+        let get_current_branch_name = self.get_current_branch_name.ok_or(CommandError::InternalError(
+            "ブランチ名取得関数が指定されていません".to_string(),
         ))?;
         let no_display = self.no_display.unwrap_or(false);
 
@@ -135,7 +129,7 @@ pub struct Handler<'a> {
 }
 
 impl Handler<'_> {
-    pub fn exec(&mut self) -> Result<(), Error> {
+    pub fn exec(&mut self) -> Result<(), CommandError> {
         let mut data = self.get_current_data()?;
         let input = self.get_input()?;
         data.set_scope(input);
@@ -145,13 +139,13 @@ impl Handler<'_> {
         Ok(())
     }
 
-    fn get_current_data(&mut self) -> Result<ConfigData, Error> {
-        self.config
-            .load()
-            .map_err(|_| Error::new(std::io::ErrorKind::Other, "設定の読み込みに失敗しました"))
+    fn get_current_data(&mut self) -> Result<ConfigData, CommandError> {
+        let data = self.config
+            .load()?;
+        Ok(data)
     }
 
-    fn get_input(&self) -> Result<ConfigScopeInput, Error> {
+    fn get_input(&self) -> Result<ConfigScopeInput, CommandError> {
         if self.cmd.is_empty() {
             self.prompt_input.exec()
         } else {
@@ -165,10 +159,10 @@ impl Handler<'_> {
         }
     }
 
-    fn save_data(&mut self, data: &ConfigData) -> Result<(), Error> {
+    fn save_data(&mut self, data: &ConfigData) -> Result<(), CommandError> {
         self.config
-            .save(data)
-            .map_err(|_| Error::new(std::io::ErrorKind::Other, "設定の保存に失敗しました"))
+            .save(data)?;
+        Ok(())
     }
 
     fn display_completion(&self, new_data: &ConfigData) {
@@ -199,9 +193,9 @@ mod tests {
     use crate::commands::scope::prompt_input::MockRunner;
     use crate::config::ConfigData;
     use crate::config::MockManager;
-    use crate::config::error::ConfigError;
+    use crate::config::ConfigError;
     use crate::git::core::MockGitProvider;
-    use std::io::Error;
+
 
     mod deps_builder {
         use super::*;
@@ -326,7 +320,7 @@ mod tests {
             ScopeCommand,
             MockManager<ConfigData, ConfigError>,
             Box<dyn Runner>,
-            Box<dyn Fn() -> Result<String, Error>>,
+            Box<dyn Fn() -> Result<String, CommandError>>,
         );
 
         fn setup() -> TestSetupResult {
@@ -339,7 +333,10 @@ mod tests {
             };
             let config = MockManager::new();
             let prompt_input = Box::new(MockRunner::new());
-            let get_current_branch_name = Box::new(|| Ok("test_branch".to_string()));
+            let get_current_branch_name: Box<dyn Fn() -> Result<String, CommandError>> = 
+                Box::new(move || {
+                    Ok("test_branch".to_string())
+                });
 
             (cmd, config, prompt_input, get_current_branch_name)
         }

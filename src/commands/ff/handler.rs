@@ -6,7 +6,7 @@ use crate::config::ValidatedConfigData;
 use crate::diff::{Diff, DiffProvider};
 use crate::git::{GitProvider, core::SourceKind};
 
-use std::io::Error;
+use crate::commands::error::CommandError;
 
 pub struct DiffHandler<'a> {
     cmd: FFCommand,
@@ -21,7 +21,7 @@ impl<'a> DiffHandler<'a> {
 }
 
 impl DiffHandler<'_> {
-    pub fn exec(&mut self) -> Result<(), Error> {
+    pub fn exec(&mut self) -> Result<(), CommandError> {
         self.validate_source()?;
         let old_lines = self.extract_old_lines()?;
         let new_lines = self.extract_new_lines()?;
@@ -30,18 +30,11 @@ impl DiffHandler<'_> {
         Ok(())
     }
 
-    fn validate_source(&self) -> Result<(), Error> {
-        let git_branch = self.git.get_current_branch().map_err(|e| {
-            Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to get current branch: {}", e),
-            )
-        })?;
+    fn validate_source(&self) -> Result<(), CommandError> {
+        let git_branch = self.git.get_current_branch()?;
 
         if self.cmd.source == SourceKind::Worktree && *self.data.current_branch() != git_branch {
-            return Err(Error::new(
-                std::io::ErrorKind::Other,
-                format!(
+            return Err(CommandError::InvalidInput(format!(
                     "比較するブランチが現在のブランチと異なる場合、--source=worktree を指定することはできません。現在のブランチ: {}, 指定されたブランチ: {}",
                     self.data.current_branch(),
                     git_branch
@@ -51,53 +44,44 @@ impl DiffHandler<'_> {
         Ok(())
     }
 
-    fn extract_old_lines(&self) -> Result<Vec<String>, Error> {
+    fn extract_old_lines(&self) -> Result<Vec<String>, CommandError> {
         let branch = self.data.base_branch();
         let file_path = self.data.old_file_path();
         let range: Range = Range::parse(&self.cmd.old_range)?;
 
-        self.git
+        let lines = self.git
             .extract_lines(
                 branch,
                 file_path,
                 range.start(),
                 range.end(),
                 Some(self.cmd.source.clone()),
-            )
-            .map_err(|e| {
-                Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to extract lines: {}", e),
-                )
-            })
+            )?;
+
+        Ok(lines)
     }
 
-    fn extract_new_lines(&self) -> Result<Vec<String>, Error> {
+    fn extract_new_lines(&self) -> Result<Vec<String>, CommandError> {
         let branch = self.data.current_branch();
         let file_path = self.data.new_file_path();
         let range = Range::parse(&self.cmd.new_range)?;
 
-        self.git
+        let lints = self.git
             .extract_lines(
                 branch,
                 file_path,
                 range.start(),
                 range.end(),
                 Some(self.cmd.source.clone()),
-            )
-            .map_err(|e| {
-                Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to extract lines: {}", e),
-                )
-            })
+            )?;
+        Ok(lints)
     }
 
     fn generate_diff(
         &self,
         old_lines: Vec<String>,
         new_lines: Vec<String>,
-    ) -> Result<String, Error> {
+    ) -> Result<String, CommandError> {
         let diff = Diff::new(old_lines, new_lines);
 
         let diff_result = match self.cmd.mode {
@@ -126,7 +110,7 @@ mod tests {
     use crate::commands::ff::scope_input::ScopeCommandInput;
     use crate::config::{ConfigData, ConfigScopeInput, ValidatedConfigData};
     use crate::git::core::{MockGitProvider, SourceKind};
-    use crate::git::error::GitError;
+    use crate::git::GitError;
     use mockall::predicate::eq;
 
     fn setup_data() -> ValidatedConfigData {

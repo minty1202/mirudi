@@ -1,7 +1,8 @@
 use clap::Args;
-use std::io::{BufRead, Error, ErrorKind, Write, stdin, stdout};
+use std::io::{BufRead, Write, stdin, stdout};
 
 use crate::config::Manager;
+use crate::commands::error::CommandError;
 
 #[derive(Args)]
 pub struct InitCommand {
@@ -13,7 +14,7 @@ fn prompt_for_input<R: BufRead, W: Write>(
     reader: &mut R,
     writer: &mut W,
     prompt_message: &str,
-) -> Result<String, Error> {
+) -> Result<String, CommandError> {
     writeln!(writer, "{}", prompt_message)?;
 
     let mut input = String::new();
@@ -21,13 +22,13 @@ fn prompt_for_input<R: BufRead, W: Write>(
 
     let trimmed = input.trim();
     if trimmed.is_empty() {
-        return Err(Error::new(ErrorKind::InvalidInput, "入力が空です"));
+        return Err(CommandError::InvalidInput("入力が空です".to_string()));
     }
 
     Ok(trimmed.to_string())
 }
 
-pub fn prompt_base_branch() -> Result<String, Error> {
+pub fn prompt_base_branch() -> Result<String, CommandError> {
     let mut stdin = stdin().lock();
     let mut stdout = stdout();
     prompt_for_input(
@@ -37,37 +38,31 @@ pub fn prompt_base_branch() -> Result<String, Error> {
     )
 }
 
-fn with_handle_init<F: Fn() -> Result<String, Error>>(
+fn with_handle_init<F: Fn() -> Result<String, CommandError>>(
     cmd: InitCommand,
     config: &mut dyn Manager,
     input_fn: F,
-) -> Result<(), Error> {
+) -> Result<(), CommandError> {
     let branch = match &cmd.base {
         Some(s) if s.trim().is_empty() => {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "空のブランチ名は無効です",
-            ));
+            return Err(CommandError::IO("空のブランチ名は無効です".to_string()));
         }
         Some(s) => s.trim().to_string(),
         None => input_fn()?,
     };
 
     let mut data = config
-        .get_default()
-        .map_err(|_| Error::new(ErrorKind::Other, "設定の取得に失敗しました"))?;
-    data.set_base_branch(branch.clone())
-        .map_err(|_| Error::new(ErrorKind::InvalidInput, "ブランチ名の設定に失敗しました"))?;
+        .get_default()?;
+    data.set_base_branch(branch.clone())?;
 
     config
-        .save(&data)
-        .map_err(|_| Error::new(ErrorKind::Other, "設定の保存に失敗しました"))?;
+        .save(&data)?;
 
     println!("base_branch を '{}' に設定しました", branch);
     Ok(())
 }
 
-pub fn handle(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {
+pub fn handle(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), CommandError> {
     with_handle_init(cmd, config, prompt_base_branch)
 }
 
@@ -75,15 +70,14 @@ pub fn handle(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {
 mod tests {
     use crate::config::ConfigData;
     use crate::config::MockManager;
-    use std::io::Error;
 
     use super::*;
 
-    fn mock_prompt_for_input() -> Result<String, Error> {
+    fn mock_prompt_for_input() -> Result<String, CommandError> {
         Ok("test_branch".to_string())
     }
 
-    fn mock_handle_init(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), Error> {
+    fn mock_handle_init(cmd: InitCommand, config: &mut dyn Manager) -> Result<(), CommandError> {
         with_handle_init(cmd, config, mock_prompt_for_input)
     }
 

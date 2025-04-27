@@ -11,7 +11,7 @@ use range::Range;
 pub use scope_input::ScopeCommandInput;
 
 use clap::Args;
-use std::io::Error;
+use crate::commands::error::CommandError;
 
 use crate::git::{GitProvider, core::SourceKind};
 
@@ -37,7 +37,7 @@ pub fn handle(
     cmd: FFCommand,
     config: &mut dyn Manager,
     git: &dyn GitProvider,
-) -> Result<(), Error> {
+) -> Result<(), CommandError> {
     cmd.scope.resolve_scope_silently(config, git)?;
     let data = validated_config::load(config)?;
     let mut handler = DiffHandler::build(cmd, git, data);
