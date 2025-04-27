@@ -1,5 +1,5 @@
 use crate::config::Manager;
-use crate::git::{GitWeb, GitWebProvider};
+use crate::git::GitWebProvider;
 use super::assets::WebAssets;
 use axum::{
     Router,
@@ -17,7 +17,7 @@ use axum::extract::State;
 
 #[derive(Clone)]
 pub struct WebServerState {
-    pub git: Arc<GitWeb>,
+    pub git: Arc<dyn GitWebProvider + Send + Sync>,
     pub base_branch: String,
     pub target_branch: String,
 }
@@ -25,7 +25,7 @@ pub struct WebServerState {
 pub async fn start_server(
     port: u16,
     config: &mut dyn Manager,
-    git: Arc<GitWeb>,
+    git: Arc<dyn GitWebProvider + Send + Sync>,
 ) -> Result<(), Box<dyn std::error::Error>> {
 
     let data = config.load().map_err(|e| {
