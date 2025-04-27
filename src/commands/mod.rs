@@ -8,7 +8,7 @@ mod web;
 pub use web::WebCommand;
 
 use crate::config::Manager;
-use crate::git::{GitOperations, core::GitWeb};
+use crate::git::{GitProvider, core::GitWeb};
 
 use clap::Subcommand;
 use std::io::Error;
@@ -38,7 +38,7 @@ pub enum Commands {
 pub fn handle_cli_command(
     command: CliCommands,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
+    git: &dyn GitProvider,
 ) -> Result<(), Error> {
     match command {
         CliCommands::FF(cmd) => ff::handle(cmd, config, git),

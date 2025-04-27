@@ -4,18 +4,18 @@ use super::Range;
 
 use crate::config::ValidatedConfigData;
 use crate::diff::{Diff, DiffProvider};
-use crate::git::{GitOperations, core::SourceKind};
+use crate::git::{GitProvider, core::SourceKind};
 
 use std::io::Error;
 
 pub struct DiffHandler<'a> {
     cmd: FFCommand,
-    git: &'a dyn GitOperations,
+    git: &'a dyn GitProvider,
     data: ValidatedConfigData,
 }
 
 impl<'a> DiffHandler<'a> {
-    pub fn build(cmd: FFCommand, git: &'a dyn GitOperations, data: ValidatedConfigData) -> Self {
+    pub fn build(cmd: FFCommand, git: &'a dyn GitProvider, data: ValidatedConfigData) -> Self {
         Self { cmd, git, data }
     }
 }
@@ -125,7 +125,7 @@ mod tests {
     use super::*;
     use crate::commands::ff::scope_input::ScopeCommandInput;
     use crate::config::{ConfigData, ConfigScopeInput, ValidatedConfigData};
-    use crate::git::core::{MockGitOperations, SourceKind};
+    use crate::git::core::{MockGitProvider, SourceKind};
     use crate::git::error::GitError;
     use mockall::predicate::eq;
 
@@ -155,7 +155,7 @@ mod tests {
 
         #[test]
         fn returns_ok() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -176,7 +176,7 @@ mod tests {
 
         #[test]
         fn returns_error() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -201,7 +201,7 @@ mod tests {
 
         #[test]
         fn returns_vector_of_strings() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -230,7 +230,7 @@ mod tests {
 
         #[test]
         fn returns_error() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -263,7 +263,7 @@ mod tests {
 
         #[test]
         fn returns_vector_of_strings() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -292,7 +292,7 @@ mod tests {
 
         #[test]
         fn returns_error() {
-            let mut git = MockGitOperations::new();
+            let mut git = MockGitProvider::new();
             let scope = setup_scope_input();
             let data = setup_data();
             let cmd = FFCommand {
@@ -328,7 +328,7 @@ mod tests {
             let old_lines = vec!["line1".to_string(), "line2".to_string()];
             let new_lines = vec!["line3".to_string(), "line4".to_string()];
             let data = setup_data();
-            let git = MockGitOperations::new();
+            let git = MockGitProvider::new();
             let cmd = FFCommand {
                 scope: setup_scope_input(),
                 old_range: "1-10".to_string(),

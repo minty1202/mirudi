@@ -1,5 +1,5 @@
 use crate::config::ConfigScopeInput;
-use crate::git::GitOperations;
+use crate::git::GitProvider;
 use dialoguer::{FuzzySelect, Input};
 use std::io::Error;
 
@@ -12,15 +12,15 @@ pub trait Runner {
 }
 
 pub struct PromptInputRunner<'a> {
-    git: &'a dyn GitOperations,
+    git: &'a dyn GitProvider,
 }
 
 impl<'a> PromptInputRunner<'a> {
-    pub fn new(git: &'a dyn GitOperations) -> Self {
+    pub fn new(git: &'a dyn GitProvider) -> Self {
         Self { git }
     }
 
-    fn prompt_branch(&self, git: &dyn GitOperations) -> Result<Option<String>, Error> {
+    fn prompt_branch(&self, git: &dyn GitProvider) -> Result<Option<String>, Error> {
         let current_branch = git.get_current_branch().map_err(|_| {
             Error::new(
                 std::io::ErrorKind::Other,

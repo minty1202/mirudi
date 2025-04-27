@@ -13,7 +13,7 @@ pub use scope_input::ScopeCommandInput;
 use clap::Args;
 use std::io::Error;
 
-use crate::git::{GitOperations, core::SourceKind};
+use crate::git::{GitProvider, core::SourceKind};
 
 #[derive(Args, Debug, PartialEq)]
 pub struct FFCommand {
@@ -36,7 +36,7 @@ pub struct FFCommand {
 pub fn handle(
     cmd: FFCommand,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
+    git: &dyn GitProvider,
 ) -> Result<(), Error> {
     cmd.scope.resolve_scope_silently(config, git)?;
     let data = validated_config::load(config)?;

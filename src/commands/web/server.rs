@@ -1,5 +1,5 @@
 use crate::config::Manager;
-use crate::git::core::{GitWeb, GitWebOperations};
+use crate::git::{GitWeb, GitWebProvider};
 use super::assets::WebAssets;
 use axum::{
     Router,

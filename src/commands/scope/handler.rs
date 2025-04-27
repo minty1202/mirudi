@@ -1,5 +1,5 @@
 use crate::config::{ConfigData, ConfigScopeInput, Manager};
-use crate::git::GitOperations;
+use crate::git::GitProvider;
 use std::io::{Error, ErrorKind};
 
 use super::core::{ScopeCommand, ScopeInputResolver};
@@ -7,7 +7,7 @@ use super::prompt_input::PromptInputRunner;
 use super::prompt_input::Runner;
 
 type ConfigManagerMut<'a> = &'a mut dyn Manager;
-type MaybeGitOps<'a> = Option<&'a dyn GitOperations>;
+type MaybeGitOps<'a> = Option<&'a dyn GitProvider>;
 type PromptInputFn<'a> = Box<dyn Runner + 'a>;
 type BranchNameFetcher<'a> = Box<dyn Fn() -> Result<String, Error> + 'a>;
 
@@ -25,7 +25,7 @@ impl<'a> DepsBuilder<'a> {
         Self { git: None }
     }
 
-    pub fn git(mut self, git: &'a dyn GitOperations) -> Self {
+    pub fn git(mut self, git: &'a dyn GitProvider) -> Self {
         self.git = Some(git);
         self
     }
@@ -200,7 +200,7 @@ mod tests {
     use crate::config::ConfigData;
     use crate::config::MockManager;
     use crate::config::error::ConfigError;
-    use crate::git::core::MockGitOperations;
+    use crate::git::core::MockGitProvider;
     use std::io::Error;
 
     mod deps_builder {
@@ -208,7 +208,7 @@ mod tests {
 
         #[test]
         fn test_build() {
-            let git = MockGitOperations::new();
+            let git = MockGitProvider::new();
             let result = DepsBuilder::new().git(&git).build();
             assert!(result.is_ok());
         }
