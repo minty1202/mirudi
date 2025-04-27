@@ -1,11 +1,11 @@
+mod commands;
 mod config;
 mod diff;
 mod git;
 mod utils;
-mod commands;
 
 use clap::Parser;
-use commands::{handle_cli_command, handle_web_command, Commands};
+use commands::{Commands, handle_cli_command, handle_web_command};
 
 use std::process;
 
@@ -22,7 +22,6 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-
 
     match cli.command {
         Commands::Cli(command) => {

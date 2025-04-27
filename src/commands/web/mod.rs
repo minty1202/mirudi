@@ -13,11 +13,7 @@ pub struct WebCommand {
     pub port: u16,
 }
 
-pub fn handle(
-    cmd: WebCommand,
-    config: &mut dyn Manager,
-    git: GitWeb,
-) -> Result<(), CommandError> {
+pub fn handle(cmd: WebCommand, config: &mut dyn Manager, git: GitWeb) -> Result<(), CommandError> {
     println!("Webサーバーを起動しています。ポート: {}", cmd.port);
 
     let web_git = Arc::new(git);

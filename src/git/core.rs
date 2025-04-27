@@ -1,6 +1,6 @@
 use crate::git::error::GitError;
 use clap::ValueEnum;
-use git2::{Repository, DiffOptions};
+use git2::{DiffOptions, Repository};
 
 #[cfg(test)]
 use mockall::automock;
@@ -55,14 +55,12 @@ impl Git {
 
         let count = end - start_index + 1;
 
-        Ok(
-            content
-                .lines()
-                .skip(start_index - 1)
-                .take(count)
-                .map(|s| s.to_string())
-                .collect(),
-        )
+        Ok(content
+            .lines()
+            .skip(start_index - 1)
+            .take(count)
+            .map(|s| s.to_string())
+            .collect())
     }
 }
 
@@ -144,19 +142,28 @@ impl GitWebProvider for GitWeb {
         target_branch: &str,
     ) -> Result<Vec<String>, GitError> {
         let repo = Repository::open(".").map_err(|_| GitError::NotGitManaged)?;
-    
-        let base_object = repo.revparse_single(base_branch).map_err(|_| GitError::FileNotFound)?;
-        let target_object = repo.revparse_single(target_branch).map_err(|_| GitError::FileNotFound)?;
-    
-        let base_tree = base_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
-        let target_tree = target_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
-    
-        let mut diff_opts = DiffOptions::new(); 
-        let diff = repo.diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
+
+        let base_object = repo
+            .revparse_single(base_branch)
+            .map_err(|_| GitError::FileNotFound)?;
+        let target_object = repo
+            .revparse_single(target_branch)
+            .map_err(|_| GitError::FileNotFound)?;
+
+        let base_tree = base_object
+            .peel_to_tree()
+            .map_err(|_| GitError::InvalidObjectType)?;
+        let target_tree = target_object
+            .peel_to_tree()
+            .map_err(|_| GitError::InvalidObjectType)?;
+
+        let mut diff_opts = DiffOptions::new();
+        let diff = repo
+            .diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
             .map_err(|_| GitError::DiffExtractionFailed)?;
-    
+
         let mut files = Vec::new();
-    
+
         diff.foreach(
             &mut |delta, _progress| {
                 if let Some(path) = delta.new_file().path() {
@@ -167,7 +174,8 @@ impl GitWebProvider for GitWeb {
             None,
             None,
             None,
-        ).map_err(|_| GitError::DiffExtractionFailed)?;
+        )
+        .map_err(|_| GitError::DiffExtractionFailed)?;
 
         Ok(files)
     }
@@ -211,10 +219,7 @@ mod tests {
         let git = Git::new();
         let text = "one\ntwo";
         let result = git.extract_lines_from_string(text, 2, 100).unwrap();
-        assert_eq!(
-            result,
-            vec!["two".to_string()]
-        );
+        assert_eq!(result, vec!["two".to_string()]);
     }
 
     #[test]

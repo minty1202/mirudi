@@ -1,8 +1,8 @@
 use clap::Args;
 use std::io::{BufRead, Write, stdin, stdout};
 
-use crate::config::Manager;
 use crate::commands::error::CommandError;
+use crate::config::Manager;
 
 #[derive(Args)]
 pub struct InitCommand {
@@ -51,12 +51,10 @@ fn with_handle_init<F: Fn() -> Result<String, CommandError>>(
         None => input_fn()?,
     };
 
-    let mut data = config
-        .get_default()?;
+    let mut data = config.get_default()?;
     data.set_base_branch(branch.clone())?;
 
-    config
-        .save(&data)?;
+    config.save(&data)?;
 
     println!("base_branch を '{}' に設定しました", branch);
     Ok(())

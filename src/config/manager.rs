@@ -103,9 +103,9 @@ mod tests {
                 .expect_load()
                 .returning(|| Ok(ConfigData::default()));
 
-            mock_storage.expect_save().returning(|_| {
-                Err(ConfigError::Test)
-            });
+            mock_storage
+                .expect_save()
+                .returning(|_| Err(ConfigError::Test));
 
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();
             let mut data = ConfigData::default();
@@ -135,9 +135,10 @@ mod tests {
         fn test_returns_error() {
             let mut mock_storage = MockStorage::new();
 
-            mock_storage.expect_load().times(1).returning(|| {
-                Err(ConfigError::Test)
-            });
+            mock_storage
+                .expect_load()
+                .times(1)
+                .returning(|| Err(ConfigError::Test));
 
             let mut config_manager = ConfigManager::new(mock_storage).unwrap();
             let result = config_manager.load();

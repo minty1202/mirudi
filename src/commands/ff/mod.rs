@@ -10,8 +10,8 @@ pub use mode::DiffMode;
 use range::Range;
 pub use scope_input::ScopeCommandInput;
 
-use clap::Args;
 use crate::commands::error::CommandError;
+use clap::Args;
 
 use crate::git::{GitProvider, core::SourceKind};
 

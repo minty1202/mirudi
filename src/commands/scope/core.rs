@@ -1,5 +1,5 @@
-use clap::Args;
 use crate::commands::error::CommandError;
+use clap::Args;
 
 #[derive(Debug, Args, PartialEq)]
 pub struct ScopeCommand {
@@ -35,7 +35,9 @@ impl ScopeCommand {
         shared: &Option<String>,
     ) -> Result<Option<String>, CommandError> {
         if primary.is_some() && shared.is_some() {
-            return Err(CommandError::InvalidInput("new または old と path は併用できません".to_string()));
+            return Err(CommandError::InvalidInput(
+                "new または old と path は併用できません".to_string(),
+            ));
         }
 
         Ok(primary.clone().or_else(|| shared.clone()))
@@ -57,13 +59,13 @@ impl ScopeInputResolver for ScopeCommand {
     {
         match (&self.current, &self.branch) {
             (true, Some(_)) => Err(CommandError::InvalidInput(
-                "current と branch は同時に指定できません".to_string()
+                "current と branch は同時に指定できません".to_string(),
             )),
             (true, None) => Ok(Some(get_fn()?)),
             (false, Some(branch)) => {
                 if branch.trim().is_empty() {
                     Err(CommandError::InvalidInput(
-                        "空のブランチ名は無効です".to_string()
+                        "空のブランチ名は無効です".to_string(),
                     ))
                 } else {
                     Ok(Some(branch.clone()))

@@ -35,11 +35,10 @@ impl DiffHandler<'_> {
 
         if self.cmd.source == SourceKind::Worktree && *self.data.current_branch() != git_branch {
             return Err(CommandError::InvalidInput(format!(
-                    "比較するブランチが現在のブランチと異なる場合、--source=worktree を指定することはできません。現在のブランチ: {}, 指定されたブランチ: {}",
-                    self.data.current_branch(),
-                    git_branch
-                ),
-            ));
+                "比較するブランチが現在のブランチと異なる場合、--source=worktree を指定することはできません。現在のブランチ: {}, 指定されたブランチ: {}",
+                self.data.current_branch(),
+                git_branch
+            )));
         }
         Ok(())
     }
@@ -49,14 +48,13 @@ impl DiffHandler<'_> {
         let file_path = self.data.old_file_path();
         let range: Range = Range::parse(&self.cmd.old_range)?;
 
-        let lines = self.git
-            .extract_lines(
-                branch,
-                file_path,
-                range.start(),
-                range.end(),
-                Some(self.cmd.source.clone()),
-            )?;
+        let lines = self.git.extract_lines(
+            branch,
+            file_path,
+            range.start(),
+            range.end(),
+            Some(self.cmd.source.clone()),
+        )?;
 
         Ok(lines)
     }
@@ -66,14 +64,13 @@ impl DiffHandler<'_> {
         let file_path = self.data.new_file_path();
         let range = Range::parse(&self.cmd.new_range)?;
 
-        let lints = self.git
-            .extract_lines(
-                branch,
-                file_path,
-                range.start(),
-                range.end(),
-                Some(self.cmd.source.clone()),
-            )?;
+        let lints = self.git.extract_lines(
+            branch,
+            file_path,
+            range.start(),
+            range.end(),
+            Some(self.cmd.source.clone()),
+        )?;
         Ok(lints)
     }
 
@@ -109,8 +106,8 @@ mod tests {
     use super::*;
     use crate::commands::ff::scope_input::ScopeCommandInput;
     use crate::config::{ConfigData, ConfigScopeInput, ValidatedConfigData};
-    use crate::git::core::{MockGitProvider, SourceKind};
     use crate::git::GitError;
+    use crate::git::core::{MockGitProvider, SourceKind};
     use mockall::predicate::eq;
 
     fn setup_data() -> ValidatedConfigData {

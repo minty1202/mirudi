@@ -1,5 +1,5 @@
-use crate::config::{Manager, ValidatedConfigData};
 use crate::commands::error::CommandError;
+use crate::config::{Manager, ValidatedConfigData};
 
 pub fn load(config: &mut dyn Manager) -> Result<ValidatedConfigData, CommandError> {
     let data = config.load()?;

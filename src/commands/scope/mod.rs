@@ -4,10 +4,10 @@ mod prompt_input;
 
 pub use core::{ScopeCommand, ScopeInputResolver};
 
+use crate::commands::error::CommandError;
 use crate::config::Manager;
 use crate::git::GitProvider;
 use handler::{DepsBuilder, HandleBuilder};
-use crate::commands::error::CommandError;
 
 pub fn run_scope_silently(
     cmd: ScopeCommand,

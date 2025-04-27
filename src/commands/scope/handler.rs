@@ -1,6 +1,6 @@
+use crate::commands::error::CommandError;
 use crate::config::{ConfigData, ConfigScopeInput, Manager};
 use crate::git::GitProvider;
-use crate::commands::error::CommandError;
 
 use super::core::{ScopeCommand, ScopeInputResolver};
 use super::prompt_input::PromptInputRunner;
@@ -34,10 +34,8 @@ impl<'a> DepsBuilder<'a> {
         let git = self.git.ok_or(CommandError::InternalError(
             "Gitプロバイダが指定されていません".to_string(),
         ))?;
-        let get_current_branch = Box::new(move || {
-            git.get_current_branch()
-                .map_err(CommandError::Git)
-        });
+        let get_current_branch =
+            Box::new(move || git.get_current_branch().map_err(CommandError::Git));
 
         let prompt_input = Box::new(PromptInputRunner::new(git)) as Box<dyn Runner>;
 
@@ -96,18 +94,21 @@ impl<'a> HandleBuilder<'a> {
     }
 
     pub fn build(self) -> Result<Handler<'a>, CommandError> {
-        let cmd = self.cmd.ok_or(CommandError::InternalError("コマンドが指定されていません".to_string()))?;
+        let cmd = self.cmd.ok_or(CommandError::InternalError(
+            "コマンドが指定されていません".to_string(),
+        ))?;
 
-        let config= self.config
-            .ok_or(CommandError::InternalError(
-                "設定が指定されていません".to_string(),
-            ))?;
+        let config = self.config.ok_or(CommandError::InternalError(
+            "設定が指定されていません".to_string(),
+        ))?;
         let prompt_input = self.prompt_input.ok_or(CommandError::InternalError(
             "プロンプト入力が指定されていません".to_string(),
         ))?;
-        let get_current_branch_name = self.get_current_branch_name.ok_or(CommandError::InternalError(
-            "ブランチ名取得関数が指定されていません".to_string(),
-        ))?;
+        let get_current_branch_name =
+            self.get_current_branch_name
+                .ok_or(CommandError::InternalError(
+                    "ブランチ名取得関数が指定されていません".to_string(),
+                ))?;
         let no_display = self.no_display.unwrap_or(false);
 
         Ok(Handler {
@@ -140,8 +141,7 @@ impl Handler<'_> {
     }
 
     fn get_current_data(&mut self) -> Result<ConfigData, CommandError> {
-        let data = self.config
-            .load()?;
+        let data = self.config.load()?;
         Ok(data)
     }
 
@@ -160,8 +160,7 @@ impl Handler<'_> {
     }
 
     fn save_data(&mut self, data: &ConfigData) -> Result<(), CommandError> {
-        self.config
-            .save(data)?;
+        self.config.save(data)?;
         Ok(())
     }
 
@@ -192,10 +191,9 @@ mod tests {
     use crate::commands::scope::ScopeCommand;
     use crate::commands::scope::prompt_input::MockRunner;
     use crate::config::ConfigData;
-    use crate::config::MockManager;
     use crate::config::ConfigError;
+    use crate::config::MockManager;
     use crate::git::core::MockGitProvider;
-
 
     mod deps_builder {
         use super::*;
@@ -333,10 +331,8 @@ mod tests {
             };
             let config = MockManager::new();
             let prompt_input = Box::new(MockRunner::new());
-            let get_current_branch_name: Box<dyn Fn() -> Result<String, CommandError>> = 
-                Box::new(move || {
-                    Ok("test_branch".to_string())
-                });
+            let get_current_branch_name: Box<dyn Fn() -> Result<String, CommandError>> =
+                Box::new(move || Ok("test_branch".to_string()));
 
             (cmd, config, prompt_input, get_current_branch_name)
         }

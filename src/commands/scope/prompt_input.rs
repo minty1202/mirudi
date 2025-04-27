@@ -1,7 +1,7 @@
+use crate::commands::error::CommandError;
 use crate::config::ConfigScopeInput;
 use crate::git::GitProvider;
 use dialoguer::{FuzzySelect, Input};
-use crate::commands::error::CommandError;
 
 #[cfg(test)]
 use mockall::automock;
@@ -48,9 +48,7 @@ impl<'a> PromptInputRunner<'a> {
             .with_prompt(prompt_message)
             .allow_empty(true)
             .interact()
-            .map_err(|e| {
-                CommandError::InvalidInput(format!("無効なパス入力です: {}", e))
-            })?;
+            .map_err(|e| CommandError::InvalidInput(format!("無効なパス入力です: {}", e)))?;
 
         if path.trim().is_empty() {
             Ok(None)

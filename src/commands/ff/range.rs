@@ -9,26 +9,25 @@ impl Range {
     pub fn parse(range: &str) -> Result<Self, CommandError> {
         let parts: Vec<&str> = range.split('-').collect();
         if parts.len() != 2 {
-            return Err(CommandError::ArgParse(
-                format!("範囲 '{}' が正しくありません。例: 1-10", range),
-            ));
+            return Err(CommandError::ArgParse(format!(
+                "範囲 '{}' が正しくありません。例: 1-10",
+                range
+            )));
         }
 
-        let start = parts[0].parse::<usize>()
-            .map_err(|_| CommandError::ArgParse(
-                format!("開始値 '{}' が数値ではありません。", parts[0]),
-            ))?;
+        let start = parts[0].parse::<usize>().map_err(|_| {
+            CommandError::ArgParse(format!("開始値 '{}' が数値ではありません。", parts[0]))
+        })?;
 
-        let end = parts[1].parse::<usize>()
-            .map_err(|_| CommandError::ArgParse(
-                format!("終了値 '{}' が数値ではありません。", parts[1]),
-            ))?;
-
+        let end = parts[1].parse::<usize>().map_err(|_| {
+            CommandError::ArgParse(format!("終了値 '{}' が数値ではありません。", parts[1]))
+        })?;
 
         if start > end {
-            return Err(CommandError::InvalidInput(
-                format!("開始値 '{}' は終了値 '{}' より大きくはできません。", start, end),
-            ));
+            return Err(CommandError::InvalidInput(format!(
+                "開始値 '{}' は終了値 '{}' より大きくはできません。",
+                start, end
+            )));
         }
 
         Ok(Range { start, end })

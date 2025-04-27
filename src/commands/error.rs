@@ -1,6 +1,5 @@
-
-use crate::git::GitError;
 use crate::config::ConfigError;
+use crate::git::GitError;
 use std::io;
 
 #[derive(Debug, PartialEq)]

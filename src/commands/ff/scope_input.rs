@@ -1,7 +1,7 @@
 use clap::Args;
 
-use crate::commands::scope::{ScopeCommand, ScopeInputResolver, run_scope_silently};
 use crate::commands::error::CommandError;
+use crate::commands::scope::{ScopeCommand, ScopeInputResolver, run_scope_silently};
 
 #[derive(Debug, Args, PartialEq)]
 pub struct ScopeCommandInput {
