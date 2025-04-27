@@ -24,7 +24,6 @@ pub trait Provider {
         source: SourceKind,
     ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
-    fn for_server(&self) -> GitWebProvider;
 }
 
 pub trait WebProvider {
@@ -36,9 +35,6 @@ pub trait WebProvider {
 }
 
 pub struct GitProvider;
-
-#[derive(Clone)]
-pub struct GitWebProvider;
 
 impl GitProvider {
     pub fn new() -> Self {
@@ -119,9 +115,14 @@ impl Provider for GitProvider {
             .map(|_| true)
             .map_err(|_| GitError::NotGitManaged)
     }
+}
 
-    fn for_server(&self) -> GitWebProvider {
-        GitWebProvider
+#[derive(Clone)]
+pub struct GitWebProvider;
+
+impl GitWebProvider {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -157,18 +158,13 @@ impl WebProvider for GitWebProvider {
             None,
             None,
         ).map_err(|_| GitError::DiffExtractionFailed)?;
-        
-        // ここで差分がない場合も正常に空のリストを返す
+
         Ok(files)
     }
 }
 
-pub struct GitWeb<T: WebProvider = GitWebProvider> {
-    provider: T,
-}
-
 #[cfg_attr(test, automock)]
-pub trait GitOperations<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
+pub trait GitOperations<T: Provider = GitProvider> {
     fn get_current_branch(&self) -> Result<String, GitError>;
     fn list_branches(&self) -> Result<Vec<String>, GitError>;
     fn extract_lines(
@@ -180,22 +176,32 @@ pub trait GitOperations<T: Provider = GitProvider, U: WebProvider + Clone = GitW
         source: Option<SourceKind>,
     ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
-    fn for_server(&self) -> GitWeb<U>;
 }
 
-pub struct Git<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
+#[cfg_attr(test, automock)]
+pub trait GitWebOperations<T: WebProvider = GitWebProvider> {
+    fn list_changed_files(
+        &self,
+        base_branch: &str,
+        target_branch: &str,
+    ) -> Result<Vec<String>, GitError>;
+}
+
+pub struct Git<T: Provider = GitProvider> {
+    provider: T
+}
+
+pub struct GitWeb<T: WebProvider = GitWebProvider> {
     provider: T,
-    web_provider: U,
 }
 
 impl<T: Provider> Git<T> {
     pub fn new(provider: T) -> Self {
-        let web_provider = provider.for_server();
-        Self { provider, web_provider }
+        Self { provider }
     }
 }
 
-impl<T: Provider, U: WebProvider + Clone> GitOperations<T, U> for Git<T, U> {
+impl<T: Provider> GitOperations<T> for Git<T> {
     fn get_current_branch(&self) -> Result<String, GitError> {
         self.provider.get_current_branch()
     }
@@ -221,15 +227,16 @@ impl<T: Provider, U: WebProvider + Clone> GitOperations<T, U> for Git<T, U> {
         self.provider.is_managed()
     }
 
-    fn for_server(&self) -> GitWeb<U> {
-        GitWeb {
-            provider: self.web_provider.clone(),
-        }
-    }
 }
 
 impl<T: WebProvider> GitWeb<T> {
-    pub fn list_changed_files(
+    pub fn new(provider: T) -> Self {
+        Self { provider }
+    }
+}
+
+impl<T: WebProvider> GitWebOperations<T> for GitWeb<T> {
+    fn list_changed_files(
         &self,
         base_branch: &str,
         target_branch: &str,

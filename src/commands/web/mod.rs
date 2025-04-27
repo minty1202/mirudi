@@ -1,5 +1,5 @@
 use crate::config::Manager;
-use crate::git::GitOperations;
+use crate::git::core::GitWeb;
 
 use clap::Args;
 use std::io::Error;
@@ -16,11 +16,11 @@ pub struct WebCommand {
 pub fn handle(
     cmd: WebCommand,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
+    git: GitWeb,
 ) -> Result<(), Error> {
     println!("Webサーバーを起動しています。ポート: {}", cmd.port);
 
-    let web_git = Arc::new(git.for_server());
+    let web_git = Arc::new(git);
 
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async {

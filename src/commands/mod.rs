@@ -8,7 +8,7 @@ mod web;
 pub use web::WebCommand;
 
 use crate::config::Manager;
-use crate::git::GitOperations;
+use crate::git::{GitOperations, core::GitWeb};
 
 use clap::Subcommand;
 use std::io::Error;
@@ -50,7 +50,7 @@ pub fn handle_cli_command(
 pub fn handle_web_command(
     command: ServerCommands,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
+    git: GitWeb,
 ) -> Result<(), Error> {
     match command {
         ServerCommands::Web(cmd) => web::handle(cmd, config, git),
