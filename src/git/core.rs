@@ -1,6 +1,6 @@
 use crate::git::error::GitError;
 use clap::ValueEnum;
-use git2::{Repository, DiffOptions};
+use git2::{DiffOptions, Repository};
 
 #[cfg(test)]
 use mockall::automock;
@@ -12,7 +12,7 @@ pub enum SourceKind {
 }
 
 #[cfg_attr(test, automock)]
-pub trait Provider {
+pub trait GitProvider {
     fn get_current_branch(&self) -> Result<String, GitError>;
     fn list_branches(&self) -> Result<Vec<String>, GitError>;
     fn extract_lines(
@@ -21,13 +21,12 @@ pub trait Provider {
         file_path: &str,
         start: usize,
         end: usize,
-        source: SourceKind,
+        source: Option<SourceKind>,
     ) -> Result<Vec<String>, GitError>;
     fn is_managed(&self) -> Result<bool, GitError>;
-    fn for_server(&self) -> GitWebProvider;
 }
 
-pub trait WebProvider {
+pub trait GitWebProvider {
     fn list_changed_files(
         &self,
         base_branch: &str,
@@ -35,12 +34,9 @@ pub trait WebProvider {
     ) -> Result<Vec<String>, GitError>;
 }
 
-pub struct GitProvider;
+pub struct Git;
 
-#[derive(Clone)]
-pub struct GitWebProvider;
-
-impl GitProvider {
+impl Git {
     pub fn new() -> Self {
         Self {}
     }
@@ -51,16 +47,24 @@ impl GitProvider {
         start: usize,
         end: usize,
     ) -> Result<Vec<String>, GitError> {
+        let start_index = start.max(1);
+
+        if end < start_index {
+            return Ok(Vec::new());
+        }
+
+        let count = end - start_index + 1;
+
         Ok(content
             .lines()
-            .skip(start.saturating_sub(1))
-            .take(end.saturating_sub(start) + 1)
+            .skip(start_index - 1)
+            .take(count)
             .map(|s| s.to_string())
             .collect())
     }
 }
 
-impl Provider for GitProvider {
+impl GitProvider for Git {
     fn get_current_branch(&self) -> Result<String, GitError> {
         Repository::open(".")
             .map_err(|_| GitError::NotGitManaged)?
@@ -92,8 +96,9 @@ impl Provider for GitProvider {
         file_path: &str,
         start: usize,
         end: usize,
-        source: SourceKind,
+        source: Option<SourceKind>,
     ) -> Result<Vec<String>, GitError> {
+        let source = source.unwrap_or(SourceKind::Commit);
         match source {
             SourceKind::Worktree => {
                 let content =
@@ -119,33 +124,46 @@ impl Provider for GitProvider {
             .map(|_| true)
             .map_err(|_| GitError::NotGitManaged)
     }
+}
 
-    fn for_server(&self) -> GitWebProvider {
-        GitWebProvider
+#[derive(Clone)]
+pub struct GitWeb;
+
+impl GitWeb {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl WebProvider for GitWebProvider {
-
+impl GitWebProvider for GitWeb {
     fn list_changed_files(
         &self,
         base_branch: &str,
         target_branch: &str,
     ) -> Result<Vec<String>, GitError> {
         let repo = Repository::open(".").map_err(|_| GitError::NotGitManaged)?;
-    
-        let base_object = repo.revparse_single(base_branch).map_err(|_| GitError::FileNotFound)?;
-        let target_object = repo.revparse_single(target_branch).map_err(|_| GitError::FileNotFound)?;
-    
-        let base_tree = base_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
-        let target_tree = target_object.peel_to_tree().map_err(|_| GitError::InvalidObjectType)?;
-    
-        let mut diff_opts = DiffOptions::new(); 
-        let diff = repo.diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
+
+        let base_object = repo
+            .revparse_single(base_branch)
+            .map_err(|_| GitError::FileNotFound)?;
+        let target_object = repo
+            .revparse_single(target_branch)
+            .map_err(|_| GitError::FileNotFound)?;
+
+        let base_tree = base_object
+            .peel_to_tree()
+            .map_err(|_| GitError::InvalidObjectType)?;
+        let target_tree = target_object
+            .peel_to_tree()
+            .map_err(|_| GitError::InvalidObjectType)?;
+
+        let mut diff_opts = DiffOptions::new();
+        let diff = repo
+            .diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
             .map_err(|_| GitError::DiffExtractionFailed)?;
-    
+
         let mut files = Vec::new();
-    
+
         diff.foreach(
             &mut |delta, _progress| {
                 if let Some(path) = delta.new_file().path() {
@@ -156,238 +174,58 @@ impl WebProvider for GitWebProvider {
             None,
             None,
             None,
-        ).map_err(|_| GitError::DiffExtractionFailed)?;
-        
-        // ここで差分がない場合も正常に空のリストを返す
+        )
+        .map_err(|_| GitError::DiffExtractionFailed)?;
+
         Ok(files)
-    }
-}
-
-pub struct GitWeb<T: WebProvider = GitWebProvider> {
-    provider: T,
-}
-
-#[cfg_attr(test, automock)]
-pub trait GitOperations<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
-    fn get_current_branch(&self) -> Result<String, GitError>;
-    fn list_branches(&self) -> Result<Vec<String>, GitError>;
-    fn extract_lines(
-        &self,
-        branch: &str,
-        file_path: &str,
-        start: usize,
-        end: usize,
-        source: Option<SourceKind>,
-    ) -> Result<Vec<String>, GitError>;
-    fn is_managed(&self) -> Result<bool, GitError>;
-    fn for_server(&self) -> GitWeb<U>;
-}
-
-pub struct Git<T: Provider = GitProvider, U: WebProvider + Clone = GitWebProvider> {
-    provider: T,
-    web_provider: U,
-}
-
-impl<T: Provider> Git<T> {
-    pub fn new(provider: T) -> Self {
-        let web_provider = provider.for_server();
-        Self { provider, web_provider }
-    }
-}
-
-impl<T: Provider, U: WebProvider + Clone> GitOperations<T, U> for Git<T, U> {
-    fn get_current_branch(&self) -> Result<String, GitError> {
-        self.provider.get_current_branch()
-    }
-
-    fn list_branches(&self) -> Result<Vec<String>, GitError> {
-        self.provider.list_branches()
-    }
-
-    fn extract_lines(
-        &self,
-        branch: &str,
-        file_path: &str,
-        start: usize,
-        end: usize,
-        source: Option<SourceKind>,
-    ) -> Result<Vec<String>, GitError> {
-        let source = source.unwrap_or(SourceKind::Commit);
-        self.provider
-            .extract_lines(branch, file_path, start, end, source)
-    }
-
-    fn is_managed(&self) -> Result<bool, GitError> {
-        self.provider.is_managed()
-    }
-
-    fn for_server(&self) -> GitWeb<U> {
-        GitWeb {
-            provider: self.web_provider.clone(),
-        }
-    }
-}
-
-impl<T: WebProvider> GitWeb<T> {
-    pub fn list_changed_files(
-        &self,
-        base_branch: &str,
-        target_branch: &str,
-    ) -> Result<Vec<String>, GitError> {
-        self.provider.list_changed_files(base_branch, target_branch)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::git::error::GitError;
-    use mockall::predicate::eq;
 
-    mod git_get_current_branch {
-        use super::*;
+    #[test]
+    fn normal_range() {
+        let git = Git::new();
 
-        #[test]
-        fn test_get_current_branch() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_get_current_branch()
-                .returning(|| Ok("main".to_string()));
+        let text = "foo\nbar\nbaz\nqux";
 
-            let git = Git::new(mock_provider);
-            let result = git.get_current_branch();
+        let result = git
+            .extract_lines_from_string(text, /*start=*/ 2, /*end=*/ 3)
+            .unwrap();
 
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), "main");
-        }
-
-        #[test]
-        fn test_get_current_branch_not_git_managed() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_get_current_branch()
-                .returning(|| Err(GitError::NotGitManaged));
-
-            let git = Git::new(mock_provider);
-            let result = git.get_current_branch();
-
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), GitError::NotGitManaged);
-        }
-
-        #[test]
-        fn test_get_current_branch_empty_branch_name() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_get_current_branch()
-                .returning(|| Err(GitError::EmptyBranchName));
-
-            let git = Git::new(mock_provider);
-            let result = git.get_current_branch();
-
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), GitError::EmptyBranchName);
-        }
+        assert_eq!(result, vec!["bar".to_string(), "baz".to_string()]);
     }
 
-    mod git_list_branches {
-        use super::*;
-
-        #[test]
-        fn test_list_branches() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_list_branches()
-                .returning(|| Ok(vec!["main".to_string(), "dev".to_string()]));
-
-            let git = Git::new(mock_provider);
-            let result = git.list_branches();
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), vec!["main", "dev"]);
-        }
-
-        #[test]
-        fn test_list_branches_not_git_managed() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_list_branches()
-                .returning(|| Err(GitError::NotGitManaged));
-
-            let git = Git::new(mock_provider);
-            let result = git.list_branches();
-
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), GitError::NotGitManaged);
-        }
+    #[test]
+    fn start_zero_and_saturating() {
+        let git = Git::new();
+        let text = "a\nb\nc";
+        let result = git.extract_lines_from_string(text, 0, 2).unwrap();
+        assert_eq!(result, vec!["a".to_string(), "b".to_string()]);
     }
 
-    mod git_extract_lines {
-        use super::*;
-
-        #[test]
-        fn test_extract_lines() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_extract_lines()
-                .with(
-                    eq("main"),
-                    eq("file.txt"),
-                    eq(1),
-                    eq(10),
-                    eq(SourceKind::Commit),
-                )
-                .returning(|_, _, _, _, _| Ok(vec!["line1".to_string(), "line2".to_string()]));
-
-            let git = Git::new(mock_provider);
-            let result = git.extract_lines("main", "file.txt", 1, 10, Some(SourceKind::Commit));
-
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), vec!["line1", "line2"]);
-        }
-
-        #[test]
-        fn test_extract_lines_not_git_managed() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_extract_lines()
-                .returning(|_, _, _, _, _| Err(GitError::NotGitManaged));
-
-            let git = Git::new(mock_provider);
-            let result = git.extract_lines("main", "file.txt", 1, 10, Some(SourceKind::Commit));
-
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), GitError::NotGitManaged);
-        }
+    #[test]
+    fn end_less_than_start() {
+        let git = Git::new();
+        let text = "x\ny\nz";
+        let result = git.extract_lines_from_string(text, 3, 1).unwrap();
+        assert_eq!(result, Vec::<String>::new());
     }
 
-    mod is_managed {
-        use super::*;
+    #[test]
+    fn out_of_bounds_truncate() {
+        let git = Git::new();
+        let text = "one\ntwo";
+        let result = git.extract_lines_from_string(text, 2, 100).unwrap();
+        assert_eq!(result, vec!["two".to_string()]);
+    }
 
-        #[test]
-        fn test_is_managed() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider.expect_is_managed().returning(|| Ok(true));
-
-            let git = Git::new(mock_provider);
-            let result = git.is_managed();
-
-            assert!(result.is_ok());
-            assert!(result.unwrap());
-        }
-
-        #[test]
-        fn test_is_not_managed() {
-            let mut mock_provider = MockProvider::new();
-            mock_provider
-                .expect_is_managed()
-                .returning(|| Err(GitError::NotGitManaged));
-
-            let git = Git::new(mock_provider);
-            let result = git.is_managed();
-
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), GitError::NotGitManaged);
-        }
+    #[test]
+    fn empty_content() {
+        let git = Git::new();
+        let result = git.extract_lines_from_string("", 1, 5).unwrap();
+        assert!(result.is_empty());
     }
 }

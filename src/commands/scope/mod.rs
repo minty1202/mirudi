@@ -3,17 +3,17 @@ pub mod handler;
 mod prompt_input;
 
 pub use core::{ScopeCommand, ScopeInputResolver};
-use std::io::Error;
 
+use crate::commands::error::CommandError;
 use crate::config::Manager;
-use crate::git::GitOperations;
+use crate::git::GitProvider;
 use handler::{DepsBuilder, HandleBuilder};
 
 pub fn run_scope_silently(
     cmd: ScopeCommand,
     config: &mut dyn crate::config::Manager,
-    git: &dyn crate::git::GitOperations,
-) -> Result<(), std::io::Error> {
+    git: &dyn GitProvider,
+) -> Result<(), CommandError> {
     let deps = DepsBuilder::new().git(git).build()?;
     let mut handler = HandleBuilder::new()
         .cmd(cmd)
@@ -27,11 +27,11 @@ pub fn run_scope_silently(
     Ok(())
 }
 
-pub fn handle_scope(
+pub fn handle(
     cmd: ScopeCommand,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
-) -> Result<(), Error> {
+    git: &dyn GitProvider,
+) -> Result<(), CommandError> {
     let deps = DepsBuilder::new().git(git).build()?;
     let mut handler = HandleBuilder::new()
         .cmd(cmd)
@@ -50,7 +50,7 @@ mod tests {
 
     use crate::config::ConfigData;
     use crate::config::MockManager;
-    use crate::git::core::MockGitOperations;
+    use crate::git::core::MockGitProvider;
 
     #[test]
     fn returns_ok() {
@@ -62,7 +62,7 @@ mod tests {
             path: None,
         };
         let mut config = MockManager::new();
-        let mut git = MockGitOperations::new();
+        let mut git = MockGitProvider::new();
 
         config.expect_load().returning(|| Ok(ConfigData::default()));
         config.expect_save().returning(|_| Ok(()));
@@ -70,7 +70,7 @@ mod tests {
         git.expect_get_current_branch()
             .returning(|| Ok("test_branch".to_string()));
 
-        let result = handle_scope(cmd, &mut config, &git);
+        let result = handle(cmd, &mut config, &git);
         assert!(result.is_ok());
     }
 
@@ -84,7 +84,7 @@ mod tests {
             path: None,
         };
         let mut config = MockManager::new();
-        let mut git = MockGitOperations::new();
+        let mut git = MockGitProvider::new();
 
         config.expect_load().returning(|| Ok(ConfigData::default()));
         config.expect_save().returning(|_| Ok(()));

@@ -10,10 +10,10 @@ pub use mode::DiffMode;
 use range::Range;
 pub use scope_input::ScopeCommandInput;
 
+use crate::commands::error::CommandError;
 use clap::Args;
-use std::io::Error;
 
-use crate::git::{GitOperations, core::SourceKind};
+use crate::git::{GitProvider, core::SourceKind};
 
 #[derive(Args, Debug, PartialEq)]
 pub struct FFCommand {
@@ -33,11 +33,11 @@ pub struct FFCommand {
     pub mode: DiffMode,
 }
 
-pub fn handle_ff(
+pub fn handle(
     cmd: FFCommand,
     config: &mut dyn Manager,
-    git: &dyn GitOperations,
-) -> Result<(), Error> {
+    git: &dyn GitProvider,
+) -> Result<(), CommandError> {
     cmd.scope.resolve_scope_silently(config, git)?;
     let data = validated_config::load(config)?;
     let mut handler = DiffHandler::build(cmd, git, data);

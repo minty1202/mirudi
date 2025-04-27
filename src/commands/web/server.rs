@@ -1,6 +1,8 @@
-use crate::config::Manager;
-use crate::git::core::GitWeb;
 use super::assets::WebAssets;
+use crate::config::Manager;
+use crate::git::GitWebProvider;
+use axum::Json;
+use axum::extract::State;
 use axum::{
     Router,
     body::Body,
@@ -8,16 +10,14 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Notify;
-use axum::Json;
-use std::io;
-use axum::extract::State;
 
 #[derive(Clone)]
 pub struct WebServerState {
-    pub git: Arc<GitWeb>,
+    pub git: Arc<dyn GitWebProvider + Send + Sync>,
     pub base_branch: String,
     pub target_branch: String,
 }
@@ -25,20 +25,27 @@ pub struct WebServerState {
 pub async fn start_server(
     port: u16,
     config: &mut dyn Manager,
-    git: Arc<GitWeb>,
+    git: Arc<dyn GitWebProvider + Send + Sync>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-
     let data = config.load().map_err(|e| {
         io::Error::new(
             std::io::ErrorKind::Other,
             format!("Failed to load config: {}", e),
         )
     })?;
-    let base = data.base_branch()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "base_branchが設定されていません。mirudi init を先に実行してください"))?;
+    let base = data.base_branch().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            "base_branchが設定されていません。mirudi init を先に実行してください",
+        )
+    })?;
 
-    let target = data.current_branch()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "current_branchが設定されていません。mirudi scope を先に実行してください"))?;
+    let target = data.current_branch().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            "current_branchが設定されていません。mirudi scope を先に実行してください",
+        )
+    })?;
 
     let state = WebServerState {
         git,
@@ -51,8 +58,7 @@ pub async fn start_server(
     let shutdown_notify = Arc::new(Notify::new());
     let shutdown_notify_for_exit = shutdown_notify.clone();
 
-    let api_routes = Router::new()
-        .route("/changes", get(get_changed_files));
+    let api_routes = Router::new().route("/changes", get(get_changed_files));
 
     let app = Router::new()
         .nest("/api", api_routes)
@@ -77,7 +83,7 @@ pub async fn start_server(
 
     axum::serve(
         tokio::net::TcpListener::bind(&addr).await?,
-        app.with_state(state)
+        app.with_state(state),
     )
     .with_graceful_shutdown(async move {
         shutdown_notify.notified().await;
@@ -114,17 +120,13 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
     }
 }
 
-async fn get_changed_files(
-    State(state): State<Arc<WebServerState>>,
-) -> impl IntoResponse {
+async fn get_changed_files(State(state): State<Arc<WebServerState>>) -> impl IntoResponse {
     let base = &state.base_branch;
     let target = &state.target_branch;
-    let git = state.git.clone(); 
+    let git = state.git.clone();
 
     match git.list_changed_files(base, target) {
-        Ok(files) => {
-            Json(files).into_response()
-        }
+        Ok(files) => Json(files).into_response(),
         Err(e) => {
             eprintln!("エラー発生: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, "変更ファイル取得失敗").into_response()

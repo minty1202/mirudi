@@ -1,9 +1,13 @@
-#[derive(Debug)]
+use std::io;
+
+#[derive(Debug, PartialEq)]
 pub enum ConfigError {
     EmptyBranchName,
     MissingField(String),
-    Yaml(serde_yaml::Error),
-    Io(std::io::Error),
+    Yaml(String),
+    IoKind(io::ErrorKind),
+    #[cfg(test)]
+    Test,
 }
 
 impl std::fmt::Display for ConfigError {
@@ -14,7 +18,9 @@ impl std::fmt::Display for ConfigError {
                 write!(f, "{} フィールドが入力されていません", field)
             }
             ConfigError::Yaml(err) => write!(f, "YAML エラー: {}", err),
-            ConfigError::Io(err) => write!(f, "IO エラー: {}", err),
+            ConfigError::IoKind(err) => write!(f, "IO エラー: {}", err),
+            #[cfg(test)]
+            ConfigError::Test => write!(f, "テスト用エラー"),
         }
     }
 }
@@ -23,12 +29,12 @@ impl std::error::Error for ConfigError {}
 
 impl From<serde_yaml::Error> for ConfigError {
     fn from(err: serde_yaml::Error) -> Self {
-        ConfigError::Yaml(err)
+        ConfigError::Yaml(err.to_string())
     }
 }
 
 impl From<std::io::Error> for ConfigError {
     fn from(err: std::io::Error) -> Self {
-        ConfigError::Io(err)
+        ConfigError::IoKind(err.kind())
     }
 }

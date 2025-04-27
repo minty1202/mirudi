@@ -1,5 +1,6 @@
 use clap::Args;
 
+use crate::commands::error::CommandError;
 use crate::commands::scope::{ScopeCommand, ScopeInputResolver, run_scope_silently};
 
 #[derive(Debug, Args, PartialEq)]
@@ -34,8 +35,8 @@ impl ScopeCommandInput {
     pub fn resolve_scope_silently(
         &self,
         config: &mut dyn crate::config::Manager,
-        git: &dyn crate::git::GitOperations,
-    ) -> Result<(), std::io::Error> {
+        git: &dyn crate::git::GitProvider,
+    ) -> Result<(), CommandError> {
         let cmd = self.to_scope_command();
         if cmd.is_empty() {
             return Ok(());
@@ -51,7 +52,7 @@ mod tests {
     use super::*;
 
     use crate::config::MockManager;
-    use crate::git::core::MockGitOperations;
+    use crate::git::core::MockGitProvider;
 
     #[test]
     fn returns_ok() {
@@ -63,7 +64,7 @@ mod tests {
             path: None,
         };
         let mut config = MockManager::new();
-        let git = MockGitOperations::new();
+        let git = MockGitProvider::new();
 
         let result = cmd.resolve_scope_silently(&mut config, &git);
         assert!(result.is_ok());

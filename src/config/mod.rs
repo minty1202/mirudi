@@ -1,11 +1,11 @@
 mod data;
 pub use data::ConfigScopeInput;
 pub use data::{ConfigData, ValidatedConfigData};
-pub mod error;
+mod error;
 mod manager;
 mod storage;
 
-use error::ConfigError;
+pub use error::*;
 pub use manager::{ConfigManager, Manager};
 
 #[cfg(test)]
