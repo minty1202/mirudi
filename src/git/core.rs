@@ -23,15 +23,12 @@ pub trait GitProvider {
         end: usize,
         source: Option<SourceKind>,
     ) -> Result<Vec<String>, GitError>;
-    fn is_managed(&self) -> Result<bool, GitError>;
-}
-
-pub trait GitWebProvider {
     fn list_changed_files(
         &self,
         base_branch: &str,
         target_branch: &str,
     ) -> Result<Vec<String>, GitError>;
+    fn is_managed(&self) -> Result<bool, GitError>;
 }
 
 pub struct Git;
@@ -119,23 +116,6 @@ impl GitProvider for Git {
         }
     }
 
-    fn is_managed(&self) -> Result<bool, GitError> {
-        Repository::open(".")
-            .map(|_| true)
-            .map_err(|_| GitError::NotGitManaged)
-    }
-}
-
-#[derive(Clone)]
-pub struct GitWeb;
-
-impl GitWeb {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl GitWebProvider for GitWeb {
     fn list_changed_files(
         &self,
         base_branch: &str,
@@ -178,6 +158,12 @@ impl GitWebProvider for GitWeb {
         .map_err(|_| GitError::DiffExtractionFailed)?;
 
         Ok(files)
+    }
+
+    fn is_managed(&self) -> Result<bool, GitError> {
+        Repository::open(".")
+            .map(|_| true)
+            .map_err(|_| GitError::NotGitManaged)
     }
 }
 

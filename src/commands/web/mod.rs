@@ -1,5 +1,5 @@
 use crate::config::Manager;
-use crate::git::core::GitWeb;
+use crate::git::core::GitProvider;
 
 use clap::Args;
 use std::sync::Arc;
@@ -13,14 +13,16 @@ pub struct WebCommand {
     pub port: u16,
 }
 
-pub fn handle(cmd: WebCommand, config: &mut dyn Manager, git: GitWeb) -> Result<(), CommandError> {
+pub fn handle(
+    cmd: WebCommand,
+    config: &mut dyn Manager,
+    git: Arc<dyn GitProvider + Send + Sync>,
+) -> Result<(), CommandError> {
     println!("Webサーバーを起動しています。ポート: {}", cmd.port);
-
-    let web_git = Arc::new(git);
 
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async {
-        if let Err(e) = server::start_server(cmd.port, config, web_git).await {
+        if let Err(e) = server::start_server(cmd.port, config, git).await {
             return Err(CommandError::WebServerError(e.to_string()));
         }
         Ok(())

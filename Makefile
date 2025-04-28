@@ -27,6 +27,9 @@ format:
 	cargo fmt --all
 	@echo "Code formatted"
 
+watch_web:
+	cargo watch -x 'run -- web'
+
 test:
 	cargo test --all-targets --all-features -- --nocapture
 	@echo "Tests passed"
