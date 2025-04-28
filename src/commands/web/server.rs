@@ -1,6 +1,7 @@
 use super::assets::WebAssets;
 use crate::config::Manager;
-use crate::git::GitWebProvider;
+use crate::diff::{Diff, DiffProvider};
+use crate::git::{GitProvider, core::SourceKind};
 use axum::Json;
 use axum::extract::State;
 use axum::{
@@ -10,6 +11,7 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use std::collections::HashMap;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -17,7 +19,7 @@ use tokio::sync::Notify;
 
 #[derive(Clone)]
 pub struct WebServerState {
-    pub git: Arc<dyn GitWebProvider + Send + Sync>,
+    pub git: Arc<dyn GitProvider + Send + Sync>,
     pub base_branch: String,
     pub target_branch: String,
 }
@@ -25,7 +27,7 @@ pub struct WebServerState {
 pub async fn start_server(
     port: u16,
     config: &mut dyn Manager,
-    git: Arc<dyn GitWebProvider + Send + Sync>,
+    git: Arc<dyn GitProvider + Send + Sync>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let data = config.load().map_err(|e| {
         io::Error::new(
@@ -58,7 +60,9 @@ pub async fn start_server(
     let shutdown_notify = Arc::new(Notify::new());
     let shutdown_notify_for_exit = shutdown_notify.clone();
 
-    let api_routes = Router::new().route("/changes", get(get_changed_files));
+    let api_routes = Router::new()
+        .route("/changes", get(get_changed_files))
+        .route("/diffs", get(get_diffs));
 
     let app = Router::new()
         .nest("/api", api_routes)
@@ -130,6 +134,41 @@ async fn get_changed_files(State(state): State<Arc<WebServerState>>) -> impl Int
         Err(e) => {
             eprintln!("エラー発生: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, "変更ファイル取得失敗").into_response()
+        }
+    }
+}
+
+async fn get_diffs(State(state): State<Arc<WebServerState>>) -> impl IntoResponse {
+    let base = &state.base_branch;
+    let target = &state.target_branch;
+    let git = state.git.clone();
+
+    match git.list_changed_files(base, target) {
+        Ok(files) => {
+            let mut diffs = HashMap::new();
+
+            for file_path in files {
+                let old_lines =
+                    git.extract_lines(base, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
+                let new_lines =
+                    git.extract_lines(target, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
+
+                match (old_lines, new_lines) {
+                    (Ok(old), Ok(new)) => {
+                        let diff = Diff::new(old, new).lines_structured();
+                        diffs.insert(file_path, diff);
+                    }
+                    _ => {
+                        eprintln!("ファイルのdiff取得失敗: {}", file_path);
+                    }
+                }
+            }
+
+            Json(diffs).into_response()
+        }
+        Err(e) => {
+            eprintln!("エラー発生: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "diff一覧取得失敗").into_response()
         }
     }
 }

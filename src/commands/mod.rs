@@ -10,7 +10,8 @@ pub use web::WebCommand;
 mod error;
 
 use crate::config::Manager;
-use crate::git::{GitProvider, core::GitWeb};
+use crate::git::GitProvider;
+use std::sync::Arc;
 
 use clap::Subcommand;
 
@@ -53,7 +54,7 @@ pub fn handle_cli_command(
 pub fn handle_web_command(
     command: ServerCommands,
     config: &mut dyn Manager,
-    git: GitWeb,
+    git: Arc<dyn GitProvider + Send + Sync>,
 ) -> Result<(), CommandError> {
     match command {
         ServerCommands::Web(cmd) => web::handle(cmd, config, git),
