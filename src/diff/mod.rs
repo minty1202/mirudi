@@ -197,6 +197,6 @@ impl DiffProvider for Diff {
     }
 
     fn lines_structured(&self) -> Vec<LineDiff> {
-        self.lines_structured_with_context(0)
+        self.lines_structured_with_context(3)
     }
 }
