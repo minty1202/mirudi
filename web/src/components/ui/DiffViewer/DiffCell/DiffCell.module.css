@@ -1,0 +1,10 @@
+/* DiffCell.module.css */
+.inlineCode pre,
+.inlineCode code {
+  display: inline;
+}
+
+.inlineCode pre {
+  background-color: inherit !important;
+  white-space: pre-wrap;
+}
