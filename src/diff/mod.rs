@@ -6,7 +6,7 @@ pub enum DiffType {
     Added,
     Removed,
     Replaced,
-    Equal,
+    Equaled,
 }
 
 #[derive(serde::Serialize)]
@@ -101,7 +101,7 @@ impl Diff {
                                     lineno: new_lineno,
                                     content: line.to_string(),
                                 }),
-                                diff_type: DiffType::Equal,
+                                diff_type: DiffType::Equaled,
                             },
                             false,
                         ));
@@ -197,6 +197,6 @@ impl DiffProvider for Diff {
     }
 
     fn lines_structured(&self) -> Vec<LineDiff> {
-        self.lines_structured_with_context(0)
+        self.lines_structured_with_context(3)
     }
 }
