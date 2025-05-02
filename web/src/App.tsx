@@ -1,12 +1,15 @@
-import { Button } from "./components/ui";
+import { Button, DiffViewer } from "./components/ui";
 
 function App() {
+
   return (
     <>
-      <Button variant="default" size="md">
-        Default Button
-      </Button>
-      <h1 className=" font-bold underline">Hello world!</h1>
+      <DiffViewer.Provider>
+        <Button variant="default" size="md">
+          Default Button
+        </Button>
+        <h1 className=" font-bold underline">Hello world!</h1>
+      </DiffViewer.Provider>
     </>
   );
 }
