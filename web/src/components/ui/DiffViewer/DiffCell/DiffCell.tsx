@@ -1,8 +1,9 @@
-import { ReactElement } from 'react';
+import { ReactElement, memo } from 'react';
 import { tv } from "tailwind-variants";
-import { DiffType } from "@/components/ui/DiffViewer/types";
+import { DiffType } from "@/types";
 import { useHighlighter } from "../contexts"
 import styles from "./DiffCell.module.css";
+import { bundledLanguages } from "shiki"; 
 
 const isSelected = {
   true: "after:inset-0 after:absolute after:bg-blue-400 after:mix-blend-multiply after:opacity-50",
@@ -91,7 +92,7 @@ export interface DiffCellProps extends DiffCellDataProps {
   selected?: boolean;
 }
 
-export function DiffCell({
+function DiffCell({
   value: { lineNumber, content },
   lang,
   diffType = "equal",
@@ -105,8 +106,10 @@ export function DiffCell({
     throw new Error("Highlighter context is not available");
   }
 
+  const normalizedLang = lang && lang in bundledLanguages ? lang : "plaintext";
+
   const code = highlighter.codeToHtml(content || "", {
-    lang: lang || "plaintext",
+    lang: normalizedLang,
     theme: "github-light",
   });
 
@@ -138,4 +141,13 @@ export function EmptyCell(): ReactElement {
   );
 }
 
+const MemoizedDiffCell = memo(DiffCell, (prev, next) => {
+  return prev.selected === next.selected &&
+         prev.value === next.value &&
+         prev.lang === next.lang &&
+         prev.diffType === next.diffType;
+});
 
+export {
+  MemoizedDiffCell as DiffCell, 
+}

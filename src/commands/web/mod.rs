@@ -9,7 +9,7 @@ use crate::commands::error::CommandError;
 
 #[derive(Args)]
 pub struct WebCommand {
-    #[arg(short, long, default_value = "8192")]
+    #[arg(short, long, default_value = "3210")]
     pub port: u16,
 }
 

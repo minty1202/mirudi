@@ -7,15 +7,17 @@ use axum::extract::State;
 use axum::{
     Router,
     body::Body,
-    http::{Response, StatusCode, Uri, header},
+    http::{HeaderValue, Method, Response, StatusCode, Uri, header},
     response::IntoResponse,
     routing::get,
 };
-use std::collections::HashMap;
+
+use indexmap::IndexMap;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Notify;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[derive(Clone)]
 pub struct WebServerState {
@@ -42,12 +44,7 @@ pub async fn start_server(
         )
     })?;
 
-    let target = data.current_branch().ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            "current_branchが設定されていません。mirudi scope を先に実行してください",
-        )
-    })?;
+    let target = git.get_current_branch()?;
 
     let state = WebServerState {
         git,
@@ -61,8 +58,18 @@ pub async fn start_server(
     let shutdown_notify_for_exit = shutdown_notify.clone();
 
     let api_routes = Router::new()
-        .route("/changes", get(get_changed_files))
+        .route("/files", get(get_changed_files))
         .route("/diffs", get(get_diffs));
+
+    let origins = vec![
+        HeaderValue::from_str("http://localhost:4321").unwrap(),
+        HeaderValue::from_str(&format!("http://localhost:{}", port)).unwrap(),
+    ];
+
+    let cors = CorsLayer::new()
+        .allow_origin(AllowOrigin::list(origins))
+        .allow_methods([Method::GET])
+        .allow_headers([header::CONTENT_TYPE]);
 
     let app = Router::new()
         .nest("/api", api_routes)
@@ -78,7 +85,8 @@ pub async fn start_server(
                     "サーバーを終了します"
                 }
             }),
-        );
+        )
+        .layer(cors);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     println!("サーバーを起動しました: http://{}", addr);
@@ -143,32 +151,40 @@ async fn get_diffs(State(state): State<Arc<WebServerState>>) -> impl IntoRespons
     let target = &state.target_branch;
     let git = state.git.clone();
 
-    match git.list_changed_files(base, target) {
-        Ok(files) => {
-            let mut diffs = HashMap::new();
-
-            for file_path in files {
-                let old_lines =
-                    git.extract_lines(base, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
-                let new_lines =
-                    git.extract_lines(target, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
-
-                match (old_lines, new_lines) {
-                    (Ok(old), Ok(new)) => {
-                        let diff = Diff::new(old, new).lines_structured();
-                        diffs.insert(file_path, diff);
-                    }
-                    _ => {
-                        eprintln!("ファイルのdiff取得失敗: {}", file_path);
-                    }
-                }
-            }
-
-            Json(diffs).into_response()
-        }
+    let files = match git.list_changed_files(base, target) {
+        Ok(f) => f,
         Err(e) => {
             eprintln!("エラー発生: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "diff一覧取得失敗").into_response()
+            return (StatusCode::INTERNAL_SERVER_ERROR, "diff一覧取得失敗").into_response();
+        }
+    };
+
+    let mut diffs = IndexMap::new();
+
+    for file_path in files {
+        let old_lines =
+            git.extract_lines(base, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
+        let new_lines =
+            git.extract_lines(target, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
+
+        match (old_lines, new_lines) {
+            (Ok(old), Ok(new)) => {
+                let diff = Diff::new(old, new).lines_structured();
+                diffs.insert(file_path, diff);
+            }
+            (Ok(old), Err(_)) => {
+                let diff = Diff::new(old, vec![]).lines_structured();
+                diffs.insert(file_path, diff);
+            }
+            (Err(_), Ok(new)) => {
+                let diff = Diff::new(vec![], new).lines_structured();
+                diffs.insert(file_path, diff);
+            }
+            (Err(_), Err(_)) => {
+                eprintln!("ファイルのdiff取得失敗: {}", file_path);
+            }
         }
     }
+
+    Json(diffs).into_response()
 }
