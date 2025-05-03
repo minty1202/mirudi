@@ -1,6 +1,6 @@
 import { convertDiffBlock, extractSelectedLines } from "./helpers";
 import { DiffLine } from "../DiffCell";
-import type { DiffType } from "../types";
+import type { DiffType } from "@/types";
 
 describe("convertDiffBlock", () => {
   it("fileName と value を持つ DiffLine[] を返すこと", () => {

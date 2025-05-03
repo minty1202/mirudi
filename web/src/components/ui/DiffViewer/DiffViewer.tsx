@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, memo, JSXElementConstructor } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { DiffCell, EmptyCell } from "./DiffCell";
@@ -32,7 +32,7 @@ export interface DiffViewerProps {
   onHover: Dispatch<SetStateAction<ExtractedDiffBlockPair>>;
 }
 
-function DiffViewer({
+function RawDiffViewer({
   data,
   value,
   onHover,
@@ -75,9 +75,11 @@ function DiffViewer({
   );
 };
 
+const DiffViewer = memo(RawDiffViewer) as unknown as
+  ((props: DiffViewerProps) => ReactElement<unknown, string | JSXElementConstructor<any>>) & {
+    Provider: typeof HighlightProvider;
+  };
+
 DiffViewer.Provider = HighlightProvider;
 
-export {
-  DiffViewer
-}
-
+export { DiffViewer };

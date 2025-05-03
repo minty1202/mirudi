@@ -1,9 +1,16 @@
 use crate::git::error::GitError;
 use clap::ValueEnum;
 use git2::{DiffOptions, Repository};
+use std::path::PathBuf;
 
 #[cfg(test)]
 use mockall::automock;
+
+#[derive(Debug)]
+struct DiffEntry {
+    path: PathBuf,
+    depth: usize,
+}
 
 #[derive(ValueEnum, PartialEq, Clone, Debug)]
 pub enum SourceKind {
@@ -142,12 +149,21 @@ impl GitProvider for Git {
             .diff_tree_to_tree(Some(&base_tree), Some(&target_tree), Some(&mut diff_opts))
             .map_err(|_| GitError::DiffExtractionFailed)?;
 
-        let mut files = Vec::new();
+        let mut entries = Vec::new();
 
         diff.foreach(
-            &mut |delta, _progress| {
-                if let Some(path) = delta.new_file().path() {
-                    files.push(path.to_string_lossy().to_string());
+            &mut |delta, _| {
+                let status = delta.status();
+                let path = match status {
+                    git2::Delta::Deleted => delta.old_file().path(),
+                    _ => delta.new_file().path().or_else(|| delta.old_file().path()),
+                };
+
+                if let Some(path) = path {
+                    let path = path.to_path_buf();
+                    let depth = path.components().count().saturating_sub(1);
+
+                    entries.push(DiffEntry { path, depth });
                 }
                 true
             },
@@ -157,7 +173,24 @@ impl GitProvider for Git {
         )
         .map_err(|_| GitError::DiffExtractionFailed)?;
 
-        Ok(files)
+        entries.sort_by(|a, b| {
+            let a_parts: Vec<_> = a.path.components().collect();
+            let b_parts: Vec<_> = b.path.components().collect();
+
+            for (a_part, b_part) in a_parts.iter().zip(b_parts.iter()) {
+                match a_part.cmp(b_part) {
+                    std::cmp::Ordering::Equal => continue,
+                    other => return other,
+                }
+            }
+
+            a.depth.cmp(&b.depth)
+        });
+
+        Ok(entries
+            .into_iter()
+            .map(|e| e.path.to_string_lossy().to_string())
+            .collect())
     }
 
     fn is_managed(&self) -> Result<bool, GitError> {

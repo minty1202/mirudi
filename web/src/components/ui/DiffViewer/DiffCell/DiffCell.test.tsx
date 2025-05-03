@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DiffCellProps, EmptyCell } from "./DiffCell";
-import { DiffType } from "@/components/ui/DiffViewer/types";
+import { DiffType } from "@/types";
 jest.mock("shiki");
 
 function MockTable({ children }: { children: ReactNode }) {

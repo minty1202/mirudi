@@ -1,15 +1,13 @@
-import { Button, DiffViewer } from "./components/ui";
+import { SWRConfig } from 'swr';
+import { MainPage } from "./pages";
 
 function App() {
 
   return (
     <>
-      <DiffViewer.Provider>
-        <Button variant="default" size="md">
-          Default Button
-        </Button>
-        <h1 className=" font-bold underline">Hello world!</h1>
-      </DiffViewer.Provider>
+      <SWRConfig value={{ revalidateOnFocus: true }}>
+        <MainPage />
+      </SWRConfig>
     </>
   );
 }

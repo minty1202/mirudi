@@ -6,7 +6,7 @@ pub enum DiffType {
     Added,
     Removed,
     Replaced,
-    Equaled,
+    Equal,
 }
 
 #[derive(serde::Serialize)]
@@ -101,7 +101,7 @@ impl Diff {
                                     lineno: new_lineno,
                                     content: line.to_string(),
                                 }),
-                                diff_type: DiffType::Equaled,
+                                diff_type: DiffType::Equal,
                             },
                             false,
                         ));
