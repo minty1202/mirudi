@@ -15,10 +15,6 @@ export function HighlightProvider({
 }: HighlightProviderProps): ReactElement {
   const highlighter = useHighlighterProvider(extensions);
 
-  if (!highlighter) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <HighlighterContext.Provider value={{ highlighter }}>
       {children}

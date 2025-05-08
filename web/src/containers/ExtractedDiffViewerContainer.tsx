@@ -26,7 +26,9 @@ export function ExtractedDiffViewerContainer(): ReactElement {
       onOpen={() => setIsOpen(true)}
       onClose={() => setIsOpen(false)}
     >
-      <ExtractedDiffViewer oldLines={oldLines} newLines={newLines} />
+      <div className="p-4">
+        <ExtractedDiffViewer oldLines={oldLines} newLines={newLines} />
+      </div>
     </BottomSheet>
   );
 }

@@ -4,45 +4,47 @@ import { fetcher } from "@/lib";
 import camelcaseKeys from "camelcase-keys";
 import { diffTypeSchema } from "@/types";
 
-const lineDataSchema = z.object({
+const lineFetchDataSchema = z.object({
   lineno: z.number(),
   content: z.string(),
-});
-
-const diffSchema = z.object({
-  old: lineDataSchema.nullable(),
-  new: lineDataSchema.nullable(),
   diff_type: diffTypeSchema,
 });
 
-const diffsFetchSchema = z.record(z.string(), z.array(diffSchema));
+const lineDataSchema = z.object({
+  lineno: z.number(),
+  content: z.string(),
+  diffType: diffTypeSchema,
+});
 
-type DiffFetchData = z.infer<typeof diffsFetchSchema>;
+const diffSchema = z.object({
+  old: lineFetchDataSchema.nullable(),
+  new: lineFetchDataSchema.nullable(),
+});
 
-const diffsSchema = z.record(
-  z.string(),
-  z.array(
-    z.object({
-      old: lineDataSchema.nullable(),
-      new: lineDataSchema.nullable(),
-      diffType: diffTypeSchema,
-    }),
-  ),
+const diffFetchSchema = z.array(diffSchema);
+
+type DiffFetchData = z.infer<typeof diffFetchSchema>;
+
+const diffsSchema = z.array(
+  z.object({
+    old: lineDataSchema.nullable(),
+    new: lineDataSchema.nullable(),
+  }),
 );
 
 export type DiffData = z.infer<typeof diffsSchema>;
 
-export const useDiffData = () => {
-  const { data, error, isLoading } = useSWR("/api/diffs", async (url) => {
-    const raw = await fetcher<DiffFetchData>(url, diffsFetchSchema);
-    const camelized = Object.fromEntries(
-      Object.entries(raw).map(([filename, entries]) => [
-        filename,
-        entries.map((entry) => camelcaseKeys(entry, { deep: true })),
-      ]),
-    );
-    return diffsSchema.parse(camelized);
-  });
+export const useDiffData = (fileName: string) => {
+  const { data, error, isLoading } = useSWR(
+    `/api/diff?file=${encodeURIComponent(fileName)}`,
+    async (url) => {
+      const raw = await fetcher<DiffFetchData>(url, diffFetchSchema);
+      const camelized = raw.map((entry) => {
+        return camelcaseKeys(entry, { deep: true });
+      });
+      return diffsSchema.parse(camelized);
+    },
+  );
 
   return {
     data: data as DiffData,
