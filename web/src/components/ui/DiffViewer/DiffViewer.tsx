@@ -55,7 +55,7 @@ function RawDiffViewer({
   return (
     <>
       <div className='border border-gray-300 rounded-md bg-white'>
-        <div className='text-md font-bold text-gray-700 p-2 border-b border-gray-300'>
+        <div className='text-md font-bold text-gray-700 bg-gray-50 border-b border-gray-300 p-2'>
           {fileName}
         </div>
         <table className="table-fixed w-full">

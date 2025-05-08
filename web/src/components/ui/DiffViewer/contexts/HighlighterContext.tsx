@@ -26,10 +26,9 @@ const useHighlighterProvider = (extensions: string[] = []) => {
 
     createHighlighter({
       themes: ["github-light"],
-      langs: validLangs.length > 0 ? validLangs : Object.keys(bundledLanguages),
+      langs: validLangs.length > 1 ? validLangs : Object.keys(bundledLanguages),
     }).then(setHighlighter);
-
-  }, [extensions]);
+  }, []);
 
   return highlighter;
 };
