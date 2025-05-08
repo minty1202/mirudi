@@ -9,16 +9,16 @@ interface DiffTableProps {
 }
 
 function DiffTable({ diffResult }: DiffTableProps): ReactElement {
-
   if (!diffResult.diff || diffResult.diff.length === 0) {
     return <div className="text-sm text-gray-500">No differences found</div>;
   }
 
   return (
-    <div className='border border-gray-300 rounded-md bg-white'>
+    <div className="border border-gray-300 rounded-md bg-white">
       <table className="table-fixed w-full">
         <tbody>
-          {(diffResult.type === "lines" || diffResult.type === "no-space-lines") && (
+          {(diffResult.type === "lines" ||
+            diffResult.type === "no-space-lines") && (
             <DiffLine diff={diffResult.diff} />
           )}
           {(diffResult.type === "words" || diffResult.type === "chars") && (
@@ -33,7 +33,10 @@ function DiffTable({ diffResult }: DiffTableProps): ReactElement {
 type ViewType = "lines" | "no-space-lines" | "words" | "chars";
 const tabs: ViewType[] = ["lines", "no-space-lines", "words", "chars"];
 
-const diffFnMap: Record<ViewType, (data: { oldLines: string[]; newLines: string[] }) => DiffResult> = {
+const diffFnMap: Record<
+  ViewType,
+  (data: { oldLines: string[]; newLines: string[] }) => DiffResult
+> = {
   lines: diff.lines,
   "no-space-lines": diff.noSpaceLines,
   words: diff.words,
@@ -45,7 +48,10 @@ interface ExtractedDiffViewerProps {
   newLines: string[];
 }
 
-export function ExtractedDiffViewer({ oldLines, newLines }: ExtractedDiffViewerProps): ReactElement {
+export function ExtractedDiffViewer({
+  oldLines,
+  newLines,
+}: ExtractedDiffViewerProps): ReactElement {
   const [tab, setTab] = useState<ViewType>("lines");
 
   const diffResult = diffFnMap[tab]({
@@ -64,5 +70,5 @@ export function ExtractedDiffViewer({ oldLines, newLines }: ExtractedDiffViewerP
       </div>
       <DiffTable diffResult={diffResult} />
     </>
-  )
+  );
 }

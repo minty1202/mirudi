@@ -1,1 +1,1 @@
-export * from './DiffCell';
+export * from "./DiffCell";

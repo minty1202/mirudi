@@ -1,7 +1,6 @@
-
 import type { Meta, StoryObj } from "@storybook/react";
 import { DiffCell, EmptyCell, DiffLine } from "./DiffCell";
-import { HighlightProvider } from "../contexts"
+import { HighlightProvider } from "../contexts";
 
 const meta: Meta<typeof DiffCell> = {
   title: "Components/UI/DiffViewer/DiffCell",
@@ -14,7 +13,7 @@ const meta: Meta<typeof DiffCell> = {
           <Story />
         </HighlightProvider>
       );
-    }
+    },
   ],
   argTypes: {
     diffType: {
@@ -35,8 +34,8 @@ const dummyProps = {
   onMouseEnter: (line: DiffLine) => {
     console.log("mouseEnter", line);
   },
-  selected: false
-}
+  selected: false,
+};
 
 export const Default: Story = {
   args: {

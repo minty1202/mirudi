@@ -1,8 +1,10 @@
 import { DiffViewData, ExtractedDiffBlockPair } from "..";
 import { DiffLine } from "../DiffCell";
 
-export const convertDiffBlock = (data: DiffViewData): ExtractedDiffBlockPair => {
-  const { fileName, diffData } = data
+export const convertDiffBlock = (
+  data: DiffViewData,
+): ExtractedDiffBlockPair => {
+  const { fileName, diffData } = data;
 
   const leftData: DiffLine[] = [];
   const rightData: DiffLine[] = [];
@@ -26,12 +28,14 @@ export const convertDiffBlock = (data: DiffViewData): ExtractedDiffBlockPair => 
       data: rightData,
     },
   };
-}
+};
 
-export const extractSelectedLines = (range: { start: number, end: number }, data: DiffLine[]) => {
+export const extractSelectedLines = (
+  range: { start: number; end: number },
+  data: DiffLine[],
+) => {
   const { start, end } = range;
 
   const [s, e] = [start, end].sort((a, b) => a - b);
-  return data.filter(line => line.lineNumber >= s && line.lineNumber <= e);
-}
-
+  return data.filter((line) => line.lineNumber >= s && line.lineNumber <= e);
+};

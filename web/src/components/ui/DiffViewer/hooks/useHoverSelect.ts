@@ -1,18 +1,14 @@
-import { useRef } from 'react';
+import { useRef } from "react";
 import { DiffLine } from "../DiffCell";
 import { DiffViewerProps } from "../DiffViewer";
-import { convertDiffBlock, extractSelectedLines } from '../helpers';
+import { convertDiffBlock, extractSelectedLines } from "../helpers";
 
 type SelectionAnchorState = {
   left: number | null;
   right: number | null;
 };
 
-export const useHoverSelect = ({
-  data,
-  value,
-  onHover,
-}: DiffViewerProps) => {
+export const useHoverSelect = ({ data, value, onHover }: DiffViewerProps) => {
   const diffBlock = convertDiffBlock(data);
 
   const selectionAnchor = useRef<SelectionAnchorState>({
@@ -20,10 +16,10 @@ export const useHoverSelect = ({
     right: null,
   });
 
-  const handleMouseDown = (side: 'left' | 'right') => (diffLine: DiffLine) => {
+  const handleMouseDown = (side: "left" | "right") => (diffLine: DiffLine) => {
     selectionAnchor.current[side] = diffLine.lineNumber;
 
-    onHover(prev => ({
+    onHover((prev) => ({
       ...prev,
       [side]: {
         ...prev[side],
@@ -33,22 +29,24 @@ export const useHoverSelect = ({
     }));
   };
 
-  const handleMouseEnter = (side: 'left' | 'right') => ({ lineNumber: currentLine }: DiffLine) => {
-    const startLine = selectionAnchor.current[side];
-    if (startLine === null) return;
+  const handleMouseEnter =
+    (side: "left" | "right") =>
+    ({ lineNumber: currentLine }: DiffLine) => {
+      const startLine = selectionAnchor.current[side];
+      if (startLine === null) return;
 
-    const [start, end] = [startLine, currentLine].sort((a, b) => a - b);
-    const lines = extractSelectedLines({ start, end }, diffBlock[side].data);
+      const [start, end] = [startLine, currentLine].sort((a, b) => a - b);
+      const lines = extractSelectedLines({ start, end }, diffBlock[side].data);
 
-    onHover(prev => ({
-      ...prev,
-      [side]: {
-        ...prev[side],
-        fileName: diffBlock[side].fileName,
-        data: lines,
-      },
-    }));
-  };
+      onHover((prev) => ({
+        ...prev,
+        [side]: {
+          ...prev[side],
+          fileName: diffBlock[side].fileName,
+          data: lines,
+        },
+      }));
+    };
 
   const handleMouseUp = () => {
     selectionAnchor.current = {
@@ -57,29 +55,31 @@ export const useHoverSelect = ({
     };
   };
 
-  const checkLineSelected = (side: 'left' | 'right') => (lineNumber: number): boolean => {
-    const block = value[side];
-    if (!block.data.length) return false;
-    if (block.fileName !== diffBlock[side].fileName) return false;
+  const checkLineSelected =
+    (side: "left" | "right") =>
+    (lineNumber: number): boolean => {
+      const block = value[side];
+      if (!block.data.length) return false;
+      if (block.fileName !== diffBlock[side].fileName) return false;
 
-    const selectedLines = value[side].data;
-    const first = selectedLines[0]?.lineNumber;
-    const last = selectedLines[selectedLines.length - 1]?.lineNumber;
+      const selectedLines = value[side].data;
+      const first = selectedLines[0]?.lineNumber;
+      const last = selectedLines[selectedLines.length - 1]?.lineNumber;
 
-    const [min, max] = [first, last].sort((a, b) => a - b);
-    return lineNumber >= min && lineNumber <= max;
-  };
+      const [min, max] = [first, last].sort((a, b) => a - b);
+      return lineNumber >= min && lineNumber <= max;
+    };
 
   return {
     left: {
-      onMouseDown: handleMouseDown('left'),
-      onMouseEnter: handleMouseEnter('left'),
-      selectionChecker: checkLineSelected('left'),
+      onMouseDown: handleMouseDown("left"),
+      onMouseEnter: handleMouseEnter("left"),
+      selectionChecker: checkLineSelected("left"),
     },
     right: {
-      onMouseDown: handleMouseDown('right'),
-      onMouseEnter: handleMouseEnter('right'),
-      selectionChecker: checkLineSelected('right'),
+      onMouseDown: handleMouseDown("right"),
+      onMouseEnter: handleMouseEnter("right"),
+      selectionChecker: checkLineSelected("right"),
     },
     onMouseUp: handleMouseUp,
   };

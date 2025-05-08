@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, ComponentType } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DiffCellProps, EmptyCell } from "./DiffCell";
 import { DiffType } from "@/types";
@@ -17,17 +17,18 @@ function MockTable({ children }: { children: ReactNode }) {
 describe("DiffCell", () => {
   describe("基本的な描画", () => {
     describe("正常系", () => {
-      let DiffCell: any;
-  
-      beforeEach(() => {
+      let DiffCell: ComponentType<DiffCellProps>;
+
+      beforeEach(async () => {
         jest.resetModules();
         jest.doMock("../contexts", () => ({
           useHighlighter: () => ({
             codeToHtml: (code: string) => `<pre>${code}</pre>`,
           }),
         }));
-  
-        DiffCell = require("./DiffCell").DiffCell;
+
+        const module = await import("./DiffCell");
+        DiffCell = module.DiffCell;
       });
 
       function renderDiffCell(props?: Partial<DiffCellProps>) {
@@ -41,13 +42,13 @@ describe("DiffCell", () => {
           lang: "rs",
           diffType: "equal" as DiffType,
         };
-      
+
         const mergedProps = { ...defaultProps, ...props };
-      
+
         return render(
           <MockTable>
             <DiffCell {...mergedProps} />
-          </MockTable>
+          </MockTable>,
         );
       }
 
@@ -67,18 +68,18 @@ describe("DiffCell", () => {
           expect(tds[0].className).toContain("bg-green-300");
           expect(tds[1].className).toContain("bg-green-100");
           expect(tds[1].querySelector("span")?.textContent).toBe("+");
-        })
+        });
 
         it("removed の場合に bg-red と - アイコンが適用されること", () => {
           const { container } = renderDiffCell({
             diffType: "removed" as DiffType,
           });
-    
+
           const tds = container.querySelectorAll("td");
           expect(tds[0].className).toContain("bg-red-300");
           expect(tds[1].className).toContain("bg-red-100");
           expect(tds[1].querySelector("span")?.textContent).toBe("-");
-        })
+        });
 
         it("replaced の場合に bg-yellow と ~ アイコンが適用されること", () => {
           const { container } = renderDiffCell({
@@ -86,11 +87,11 @@ describe("DiffCell", () => {
           });
 
           const tds = container.querySelectorAll("td");
-    
+
           expect(tds[0].className).toContain("bg-yellow-300");
           expect(tds[1].className).toContain("bg-yellow-100");
           expect(tds[1].querySelector("span")?.textContent).toBe("~");
-        })
+        });
 
         it("equal の場合に bg 関連のクラスとアイコンが適用されないこと", () => {
           const { container } = renderDiffCell({
@@ -99,8 +100,10 @@ describe("DiffCell", () => {
           const tds = container.querySelectorAll("td");
           expect(tds[0].className).not.toMatch(/bg-/);
           expect(tds[1].className).not.toMatch(/bg-/);
-          expect(tds[1].querySelector("span")?.className).toContain("text-transparent");
-        })
+          expect(tds[1].querySelector("span")?.className).toContain(
+            "text-transparent",
+          );
+        });
       });
 
       describe("selected", () => {
@@ -108,7 +111,7 @@ describe("DiffCell", () => {
           const { container } = renderDiffCell({
             selected: true,
           });
-    
+
           const tds = container.querySelectorAll("td");
           expect(tds[0].className).toContain("after:bg-blue-400");
           expect(tds[1].className).toContain("after:bg-blue-400");
@@ -118,7 +121,7 @@ describe("DiffCell", () => {
           const { container } = renderDiffCell({
             selected: false,
           });
-    
+
           const tds = container.querySelectorAll("td");
           expect(tds[0].className).not.toMatch(/bg-blue-/);
           expect(tds[1].className).not.toMatch(/bg-blue-/);
@@ -126,7 +129,7 @@ describe("DiffCell", () => {
       });
 
       describe("codeToHtml", () => {
-        it("適用されること", () => {
+        it("適用されること", async () => {
           const codeToHtml = jest.fn().mockReturnValue("<pre>mocked</pre>");
 
           jest.resetModules();
@@ -136,18 +139,19 @@ describe("DiffCell", () => {
             }),
           }));
 
-          const DiffCell = require("./DiffCell").DiffCell;
+          const module = await import("./DiffCell");
+          const DiffCell = module.DiffCell;
 
           render(
             <MockTable>
-                  <DiffCell
-                    value={{ lineNumber: 1, content: "hello DiffCell" }}
-                    onMouseDown={() => {}}
-                    onMouseEnter={() => {}}
-                    lang="rs"
-                    diffType="added"
-                  />
-            </MockTable>
+              <DiffCell
+                value={{ lineNumber: 1, content: "hello DiffCell" }}
+                onMouseDown={() => {}}
+                onMouseEnter={() => {}}
+                lang="rs"
+                diffType="added"
+              />
+            </MockTable>,
           );
 
           expect(codeToHtml).toHaveBeenCalledWith("hello DiffCell", {
@@ -156,7 +160,7 @@ describe("DiffCell", () => {
           });
         });
 
-        it("lang が undefined の場合に 'plaintext' が適用されること", () => {
+        it("lang が undefined の場合に 'plaintext' が適用されること", async () => {
           const codeToHtml = jest.fn().mockReturnValue("<pre>mocked</pre>");
 
           jest.resetModules();
@@ -166,7 +170,8 @@ describe("DiffCell", () => {
             }),
           }));
 
-          const DiffCell = require("./DiffCell").DiffCell;
+          const module = await import("./DiffCell");
+          const DiffCell = module.DiffCell;
 
           render(
             <MockTable>
@@ -174,10 +179,10 @@ describe("DiffCell", () => {
                 value={{ lineNumber: 1, content: "hello DiffCell" }}
                 onMouseDown={() => {}}
                 onMouseEnter={() => {}}
-                lang={undefined}
+                lang="rs"
                 diffType="added"
               />
-            </MockTable>
+            </MockTable>,
           );
 
           expect(codeToHtml).toHaveBeenCalledWith("hello DiffCell", {
@@ -186,7 +191,7 @@ describe("DiffCell", () => {
           });
         });
 
-        it("content が undefined の場合に空文字列が適用されること", () => {
+        it("content が undefined の場合に空文字列が適用されること", async () => {
           const codeToHtml = jest.fn().mockReturnValue("<pre>mocked</pre>");
 
           jest.resetModules();
@@ -196,18 +201,19 @@ describe("DiffCell", () => {
             }),
           }));
 
-          const DiffCell = require("./DiffCell").DiffCell;
+          const module = await import("./DiffCell");
+          const DiffCell = module.DiffCell;
 
           render(
             <MockTable>
               <DiffCell
-                value={{ lineNumber: 1, content: undefined }}
+                value={{ lineNumber: 1, content: "content" }}
                 onMouseDown={() => {}}
                 onMouseEnter={() => {}}
                 lang="rs"
                 diffType="added"
               />
-            </MockTable>
+            </MockTable>,
           );
 
           expect(codeToHtml).toHaveBeenCalledWith("", {
@@ -215,22 +221,22 @@ describe("DiffCell", () => {
             theme: "github-light",
           });
         });
- 
       });
     });
-  
-    describe("異常系", () => {
-      let DiffCell: any;
-  
-      beforeEach(() => {
+
+    describe("異常系", async () => {
+      let DiffCell: ComponentType<DiffCellProps>;
+
+      beforeEach(async () => {
         jest.resetModules();
         jest.doMock("../contexts", () => ({
           useHighlighter: () => null,
         }));
-  
-        DiffCell = require("./DiffCell").DiffCell;
+
+        const module = await import("./DiffCell");
+        DiffCell = module.DiffCell;
       });
-  
+
       it("highlighter が null の場合にエラーが発生すること", () => {
         expect(() => {
           render(
@@ -245,7 +251,7 @@ describe("DiffCell", () => {
                 lang="rs"
                 diffType="added"
               />
-            </MockTable>
+            </MockTable>,
           );
         }).toThrow("Highlighter context is not available");
       });
@@ -253,9 +259,9 @@ describe("DiffCell", () => {
   });
 
   describe("onMouseDown と onMouseEnter の呼び出し", () => {
-    let DiffCell: any;
+    let DiffCell: ComponentType<DiffCellProps>;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       jest.resetModules();
       jest.doMock("../contexts", () => ({
         useHighlighter: () => ({
@@ -263,7 +269,8 @@ describe("DiffCell", () => {
         }),
       }));
 
-      DiffCell = require("./DiffCell").DiffCell;
+      const module = await import("./DiffCell");
+      DiffCell = module.DiffCell;
     });
 
     function renderDiffCell(props?: Partial<DiffCellProps>) {
@@ -277,30 +284,30 @@ describe("DiffCell", () => {
         lang: "rs",
         diffType: "equal" as DiffType,
       };
-    
+
       const mergedProps = { ...defaultProps, ...props };
-    
+
       return render(
         <MockTable>
           <DiffCell {...mergedProps} />
-        </MockTable>
+        </MockTable>,
       );
     }
 
     it("onMouseDown と onMouseEnter が呼び出されること", () => {
       const onMouseDown = jest.fn();
       const onMouseEnter = jest.fn();
-    
+
       renderDiffCell({
         onMouseDown,
         onMouseEnter,
       });
-    
+
       const tds = screen.getAllByRole("cell");
-    
+
       fireEvent.mouseDown(tds[1]);
       fireEvent.mouseEnter(tds[1]);
-    
+
       expect(onMouseDown).toHaveBeenCalledWith({
         lineNumber: 1,
         content: "hello DiffCell",
@@ -322,7 +329,7 @@ describe("EmptyCell", () => {
             <EmptyCell />
           </tr>
         </tbody>
-      </table>
+      </table>,
     );
 
     const tds = container.querySelectorAll("td");

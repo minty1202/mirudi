@@ -16,7 +16,7 @@ const diffIcon = tv({
   },
 });
 
-export function DiffIcon ({ diffType }: { diffType: DiffType }) {
+export function DiffIcon({ diffType }: { diffType: DiffType }) {
   switch (diffType) {
     case "added":
       return <span className={diffIcon({ diffType })}>+</span>;

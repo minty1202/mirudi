@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactElement, ReactNode } from "react";
+import { useState, useEffect } from "react";
 import { createContext, useContext } from "react";
 import { createHighlighter, bundledLanguages } from "shiki";
 import type { Highlighter } from "shiki";
@@ -6,7 +6,9 @@ import type { Highlighter } from "shiki";
 export type HighlighterContextType = {
   highlighter: Highlighter | null;
 };
-export const HighlighterContext = createContext<HighlighterContextType | null>(null);
+export const HighlighterContext = createContext<HighlighterContextType | null>(
+  null,
+);
 
 export const useHighlighter = () => {
   const context = useContext(HighlighterContext);
@@ -16,38 +18,19 @@ export const useHighlighter = () => {
   return context.highlighter;
 };
 
-const useHighlighterProvider = (extensions: string[] = []) => {
+export const useHighlighterProvider = (extensions: string[] = []) => {
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
 
   useEffect(() => {
     const validLangs = extensions
-      .filter(ext => ext in bundledLanguages)
+      .filter((ext) => ext in bundledLanguages)
       .concat("plaintext");
 
     createHighlighter({
       themes: ["github-light"],
       langs: validLangs.length > 1 ? validLangs : Object.keys(bundledLanguages),
     }).then(setHighlighter);
-  }, []);
+  }, [extensions]);
 
   return highlighter;
-};
-
-interface HighlightProviderProps {
-  extensions?: string[];
-  children: ReactNode;
-}
-
-export function HighlightProvider({ extensions, children }: HighlightProviderProps): ReactElement {
-  const highlighter = useHighlighterProvider(extensions);
-
-  if (!highlighter) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <HighlighterContext.Provider value={{ highlighter }}>
-      {children}
-    </HighlighterContext.Provider>
-  );
 };

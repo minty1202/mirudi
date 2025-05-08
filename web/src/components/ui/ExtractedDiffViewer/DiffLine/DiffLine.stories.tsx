@@ -26,6 +26,6 @@ export const Default: Story = {
         content: "import { Button } from './components/ui';",
         diffType: "removed",
       },
-    ]
+    ],
   },
-}
+};

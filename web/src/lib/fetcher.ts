@@ -1,7 +1,10 @@
 import { ZodSchema } from "zod";
 
-export const fetcher = async <T>(url: string, schema: ZodSchema<T>): Promise<T> => {
-  const baseUrl = 'http://127.0.0.1:3210';
+export const fetcher = async <T>(
+  url: string,
+  schema: ZodSchema<T>,
+): Promise<T> => {
+  const baseUrl = "http://127.0.0.1:3210";
   const fullUrl = url.startsWith("http") ? url : `${baseUrl}${url}`;
 
   try {

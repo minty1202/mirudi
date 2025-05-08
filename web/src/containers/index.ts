@@ -1,2 +1,2 @@
-export * from './DiffViewerContainer';
-export * from './ExtractedDiffViewerContainer';
+export * from "./DiffViewerContainer";
+export * from "./ExtractedDiffViewerContainer";

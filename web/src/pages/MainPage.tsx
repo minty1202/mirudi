@@ -2,7 +2,10 @@ import { ReactElement, useMemo } from "react";
 import { DiffViewer } from "@/components/ui";
 import { useDiffData } from "@/hooks";
 import { convertDiffViewData, extractExtension } from "@/utils";
-import { DiffViewerContainer, ExtractedDiffViewerContainer } from "@/containers";
+import {
+  DiffViewerContainer,
+  ExtractedDiffViewerContainer,
+} from "@/containers";
 import { SelectedDiffValueProvider } from "@/contexts";
 
 export function MainPage(): ReactElement {
@@ -34,15 +37,12 @@ export function MainPage(): ReactElement {
         <DiffViewer.Provider extensions={extensions}>
           <div className="flex flex-col gap-4 p-4">
             {diffData.map((item, index) => (
-              <DiffViewerContainer
-                key={index}
-                data={item}
-              />
+              <DiffViewerContainer key={index} data={item} />
             ))}
           </div>
         </DiffViewer.Provider>
         <ExtractedDiffViewerContainer />
       </SelectedDiffValueProvider>
     </div>
-  )
+  );
 }

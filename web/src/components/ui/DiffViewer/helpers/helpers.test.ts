@@ -12,14 +12,14 @@ describe("convertDiffBlock", () => {
             value: { lineNumber: 1, content: "line 1" },
             lang: "txt",
             diffType: "replaced" as DiffType,
-          }
+          },
         },
         {
           rightData: {
             value: { lineNumber: 2, content: "line 2" },
             lang: "txt",
             diffType: "replaced" as DiffType,
-          }
+          },
         },
       ],
     };

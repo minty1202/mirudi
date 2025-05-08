@@ -1,6 +1,6 @@
 import { ReactElement, useState, useEffect } from "react";
 import { BottomSheet } from "@/components/ui";
-import { useSelectedDiffValue } from '@/contexts';
+import { useSelectedDiffValue } from "@/contexts";
 import { ExtractedDiffViewer } from "@/components/ui";
 
 export function ExtractedDiffViewerContainer(): ReactElement {
@@ -27,7 +27,6 @@ export function ExtractedDiffViewerContainer(): ReactElement {
       onClose={() => setIsOpen(false)}
     >
       <ExtractedDiffViewer oldLines={oldLines} newLines={newLines} />
-
-  </BottomSheet>
+    </BottomSheet>
   );
 }
