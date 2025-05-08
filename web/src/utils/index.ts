@@ -1,2 +1,2 @@
-export * from './extractExtension';
-export * from './convertDiffViewData';
+export * from "./extractExtension";
+export * from "./convertDiffViewData";

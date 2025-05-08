@@ -24,15 +24,14 @@ export interface DiffCellProps {
 }
 
 export function DiffCell({ content, diffType }: DiffCellProps): ReactElement {
-
   return (
     <>
-      <td className={diffCell({diffType})}>
+      <td className={diffCell({ diffType })}>
         <div className="flex items-start gap-1">
           <DiffIcon diffType={diffType} />
           <span>{content}</span>
         </div>
       </td>
     </>
-  )
+  );
 }

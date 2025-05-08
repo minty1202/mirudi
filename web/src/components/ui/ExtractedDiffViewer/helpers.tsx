@@ -1,26 +1,33 @@
 import type { DiffType } from "@/types";
-import { diffLines as diffLinesLib, diffWords as diffWordsLib, diffChars as diffCharsLib } from "diff";
+import {
+  diffLines as diffLinesLib,
+  diffWords as diffWordsLib,
+  diffChars as diffCharsLib,
+} from "diff";
 
-const mapDiffPartToType = (part: { added?: boolean; removed?: boolean }): DiffType => {
-  if (part.added) return 'added';
-  if (part.removed) return 'removed';
-  return 'equal';
-}
+const mapDiffPartToType = (part: {
+  added?: boolean;
+  removed?: boolean;
+}): DiffType => {
+  if (part.added) return "added";
+  if (part.removed) return "removed";
+  return "equal";
+};
 
 type DiffContent = {
   content: string;
   diffType: DiffType;
-}
+};
 
 type DiffLinesResult = {
-  type: 'lines' | 'no-space-lines';
+  type: "lines" | "no-space-lines";
   diff: DiffContent[];
-}
+};
 
 type DiffBlocksResult = {
-  type: 'words' | 'chars';
+  type: "words" | "chars";
   diff: DiffContent[][];
-}
+};
 
 type DiffResult = DiffLinesResult | DiffBlocksResult;
 
@@ -29,16 +36,13 @@ interface DiffDataPair {
   newLines: string[];
 }
 
-const diffLines = ({
-  oldLines,
-  newLines,
-}: DiffDataPair): DiffResult => {
+const diffLines = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
   const maxLength = Math.max(oldLines.length, newLines.length);
 
   const diffResult: DiffResult = {
-    type: 'lines',
+    type: "lines",
     diff: [],
-  }
+  };
   const lineDiff: DiffContent[] = [];
 
   for (let i = 0; i < maxLength; i++) {
@@ -54,22 +58,19 @@ const diffLines = ({
         content,
         diffType,
       });
-    })
+    });
   }
   diffResult.diff = lineDiff;
   return diffResult;
-}
+};
 
-const diffNoSpaceLines = ({
-  oldLines,
-  newLines,
-}: DiffDataPair): DiffResult => {
+const diffNoSpaceLines = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
   const maxLength = Math.max(oldLines.length, newLines.length);
 
   const diffResult: DiffResult = {
-    type: 'no-space-lines',
+    type: "no-space-lines",
     diff: [],
-  }
+  };
 
   const lineDiff: DiffContent[] = [];
   for (let i = 0; i < maxLength; i++) {
@@ -85,22 +86,19 @@ const diffNoSpaceLines = ({
         content,
         diffType,
       });
-    })
+    });
   }
   diffResult.diff = lineDiff;
   return diffResult;
-}
+};
 
-const diffWords = ({
-  oldLines,
-  newLines,
-}: DiffDataPair): DiffResult => {
+const diffWords = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
   const maxLength = Math.max(oldLines.length, newLines.length);
 
   const diffResult: DiffResult = {
-    type: 'words',
+    type: "words",
     diff: [],
-  }
+  };
   const wordDiff: DiffContent[][] = [];
   for (let i = 0; i < maxLength; i++) {
     const oldLine = oldLines[i] || "";
@@ -116,23 +114,20 @@ const diffWords = ({
         content,
         diffType,
       });
-    })
+    });
     wordDiff.push(lineDiff);
   }
   diffResult.diff = wordDiff;
   return diffResult;
-}
+};
 
-const diffChars = ({
-  oldLines,
-  newLines,
-}: DiffDataPair): DiffResult => {
+const diffChars = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
   const maxLength = Math.max(oldLines.length, newLines.length);
 
   const diffResult: DiffResult = {
-    type: 'chars',
+    type: "chars",
     diff: [],
-  }
+  };
   const charDiff: DiffContent[][] = [];
   for (let i = 0; i < maxLength; i++) {
     const oldLine = oldLines[i] || "";
@@ -148,21 +143,18 @@ const diffChars = ({
         content,
         diffType,
       });
-    })
+    });
     charDiff.push(lineDiff);
   }
   diffResult.diff = charDiff;
   return diffResult;
-}
+};
 
 export const diff = {
   lines: diffLines,
   noSpaceLines: diffNoSpaceLines,
   words: diffWords,
   chars: diffChars,
-}
+};
 
-export type {
-  DiffResult,
-  DiffContent,
-}
+export type { DiffResult, DiffContent };

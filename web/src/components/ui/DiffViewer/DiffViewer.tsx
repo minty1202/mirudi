@@ -1,12 +1,12 @@
-import { ReactElement, memo, JSXElementConstructor } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import { ReactElement, memo, JSXElementConstructor } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import { DiffCell, EmptyCell } from "./DiffCell";
 import type { DiffCellDataProps, DiffLine } from "./DiffCell";
-import { useHoverSelect } from './hooks';
-import { HighlightProvider } from './contexts';
+import { useHoverSelect } from "./hooks";
+import { HighlightProvider } from "./contexts";
 
-interface DiffRowProps {
+export interface DiffRowProps {
   leftData?: DiffCellDataProps | null;
   rightData?: DiffCellDataProps | null;
 }
@@ -37,11 +37,7 @@ function RawDiffViewer({
   value,
   onHover,
 }: DiffViewerProps): ReactElement {
-  const {
-    left,
-    right,
-    onMouseUp,
-  } = useHoverSelect({
+  const { left, right, onMouseUp } = useHoverSelect({
     data,
     value,
     onHover,
@@ -54,18 +50,32 @@ function RawDiffViewer({
 
   return (
     <>
-      <div className='border border-gray-300 rounded-md bg-white'>
-        <div className='text-md font-bold text-gray-700 bg-gray-50 border-b border-gray-300 p-2'>
+      <div className="border border-gray-300 rounded-md bg-white">
+        <div className="text-md font-bold text-gray-700 bg-gray-50 border-b border-gray-300 p-2">
           {fileName}
         </div>
         <table className="table-fixed w-full">
-          <tbody
-            onMouseUp={onMouseUp}
-          >
-            {diffData.map(({leftData, rightData }, index) => (
+          <tbody onMouseUp={onMouseUp}>
+            {diffData.map(({ leftData, rightData }, index) => (
               <tr key={index}>
-                {leftData ? <DiffCell {...leftData} selected={selectionCheckerLeft(leftData.value.lineNumber)} {...leftRest} /> : <EmptyCell />}
-                {rightData ? <DiffCell {...rightData} selected={selectionCheckerRight(rightData.value.lineNumber)} {...rightRest} /> : <EmptyCell />}
+                {leftData ? (
+                  <DiffCell
+                    {...leftData}
+                    selected={selectionCheckerLeft(leftData.value.lineNumber)}
+                    {...leftRest}
+                  />
+                ) : (
+                  <EmptyCell />
+                )}
+                {rightData ? (
+                  <DiffCell
+                    {...rightData}
+                    selected={selectionCheckerRight(rightData.value.lineNumber)}
+                    {...rightRest}
+                  />
+                ) : (
+                  <EmptyCell />
+                )}
               </tr>
             ))}
           </tbody>
@@ -73,12 +83,13 @@ function RawDiffViewer({
       </div>
     </>
   );
-};
+}
 
-const DiffViewer = memo(RawDiffViewer) as unknown as
-  ((props: DiffViewerProps) => ReactElement<unknown, string | JSXElementConstructor<any>>) & {
-    Provider: typeof HighlightProvider;
-  };
+const DiffViewer = memo(RawDiffViewer) as unknown as ((
+  props: DiffViewerProps,
+) => ReactElement<unknown, string | JSXElementConstructor<DiffViewerProps>>) & {
+  Provider: typeof HighlightProvider;
+};
 
 DiffViewer.Provider = HighlightProvider;
 

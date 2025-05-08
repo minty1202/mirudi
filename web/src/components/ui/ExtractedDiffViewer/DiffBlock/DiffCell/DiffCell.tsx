@@ -18,12 +18,11 @@ interface DiffCellContentProps {
   diffType: DiffType;
 }
 
-function DiffCellContent({ content, diffType }: DiffCellContentProps): ReactElement {
-  return (
-    <span className={diffCellContent({ diffType })}>
-      {content}
-    </span>
-  );
+function DiffCellContent({
+  content,
+  diffType,
+}: DiffCellContentProps): ReactElement {
+  return <span className={diffCellContent({ diffType })}>{content}</span>;
 }
 
 interface DiffCellProps {

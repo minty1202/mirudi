@@ -9,7 +9,6 @@ const meta: Meta<typeof ExtractedDiffViewer> = {
 
 export default meta;
 
-
 type Story = StoryObj<typeof ExtractedDiffViewer>;
 
 export const Default: Story = {
@@ -25,4 +24,4 @@ export const Default: Story = {
       "    This is the third line",
     ],
   },
-}
+};

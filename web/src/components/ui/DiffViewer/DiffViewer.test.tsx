@@ -48,7 +48,7 @@ function renderDiffViewerWithState(props: Partial<DiffViewerProps>) {
             lang: "tsx",
             diffType: "equal",
           },
-        }
+        },
       ],
     },
     value: {
@@ -65,24 +65,20 @@ function renderDiffViewerWithState(props: Partial<DiffViewerProps>) {
   };
   const mergedProps = { ...defaultProps, ...props };
 
-  return render(
-    <DiffViewer
-      {...mergedProps}
-    />
-  );
-};
-
+  return render(<DiffViewer {...mergedProps} />);
+}
 
 describe("DiffViewer", () => {
   it("DiffViewer が表示されること", () => {
-    renderDiffViewerWithState({
-    });
+    renderDiffViewerWithState({});
     expect(screen.getByText("example.rs")).toBeInTheDocument();
   });
 
   it("DiffViewer の内容が表示されること", () => {
     const { getAllByText } = renderDiffViewerWithState({});
-    expect(getAllByText('import { Button } from "./components/ui";')).toHaveLength(2);
+    expect(
+      getAllByText('import { Button } from "./components/ui";'),
+    ).toHaveLength(2);
   });
 
   it("Data が空の場合、DiffViewer が表示されないこと", () => {
@@ -93,7 +89,9 @@ describe("DiffViewer", () => {
       },
     });
     expect(queryByText("example.rs")).not.toBeInTheDocument();
-    expect(queryByText('import { Button } from "./components/ui";')).not.toBeInTheDocument();
+    expect(
+      queryByText('import { Button } from "./components/ui";'),
+    ).not.toBeInTheDocument();
   });
 
   it("leftData がなく、rightData だけがある行は EmptyCell として表示されること", () => {
@@ -117,7 +115,11 @@ describe("DiffViewer", () => {
       },
     });
     expect(getByText("2")).toBeInTheDocument();
-    expect(getByText('import { HighlighterContext, useHighlighterProvider } from "./contexts/highlighter";')).toBeInTheDocument();
+    expect(
+      getByText(
+        'import { HighlighterContext, useHighlighterProvider } from "./contexts/highlighter";',
+      ),
+    ).toBeInTheDocument();
 
     const emptyCells = container.querySelectorAll("td.bg-gray-100");
     expect(emptyCells.length).toBe(2);
@@ -144,7 +146,11 @@ describe("DiffViewer", () => {
       },
     });
     expect(getByText("2")).toBeInTheDocument();
-    expect(getByText('import { HighlighterContext, useHighlighterProvider } from "./contexts/highlighter";')).toBeInTheDocument();
+    expect(
+      getByText(
+        'import { HighlighterContext, useHighlighterProvider } from "./contexts/highlighter";',
+      ),
+    ).toBeInTheDocument();
 
     const emptyCells = container.querySelectorAll("td.bg-gray-100");
     expect(emptyCells.length).toBe(2);
@@ -169,7 +175,7 @@ describe("DiffViewer", () => {
         ],
       },
     });
-  
+
     expect(selectionCheckerLeft).toHaveBeenCalledWith(42);
     expect(selectionCheckerRight).not.toHaveBeenCalled();
   });
@@ -193,7 +199,7 @@ describe("DiffViewer", () => {
         ],
       },
     });
-  
+
     expect(selectionCheckerRight).toHaveBeenCalledWith(42);
     expect(selectionCheckerLeft).not.toHaveBeenCalled();
   });
@@ -217,10 +223,10 @@ describe("DiffViewer", () => {
         ],
       },
     });
-  
+
     const tds = container.querySelectorAll("td");
     fireEvent.mouseUp(tds[0]);
-  
+
     expect(onMouseUp).toHaveBeenCalled();
   });
 });

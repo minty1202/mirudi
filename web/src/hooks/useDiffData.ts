@@ -21,12 +21,14 @@ type DiffFetchData = z.infer<typeof diffsFetchSchema>;
 
 const diffsSchema = z.record(
   z.string(),
-  z.array(z.object({
-    old: lineDataSchema.nullable(),
-    new: lineDataSchema.nullable(),
-    diffType: diffTypeSchema,
-  }))
-)
+  z.array(
+    z.object({
+      old: lineDataSchema.nullable(),
+      new: lineDataSchema.nullable(),
+      diffType: diffTypeSchema,
+    }),
+  ),
+);
 
 export type DiffData = z.infer<typeof diffsSchema>;
 
@@ -37,7 +39,7 @@ export const useDiffData = () => {
       Object.entries(raw).map(([filename, entries]) => [
         filename,
         entries.map((entry) => camelcaseKeys(entry, { deep: true })),
-      ])
+      ]),
     );
     return diffsSchema.parse(camelized);
   });

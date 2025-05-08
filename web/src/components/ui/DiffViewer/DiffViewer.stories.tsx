@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { DiffViewer, ExtractedDiffBlockPair } from "./DiffViewer";
 import { HighlightProvider } from "@/components/ui/DiffViewer/contexts";
 
-type Props = ComponentProps<typeof DiffViewer>
+type Props = ComponentProps<typeof DiffViewer>;
 
-type WithStateProps = Omit<Props, "value" | "onHover">
+type WithStateProps = Omit<Props, "value" | "onHover">;
 
 function WithState(props: WithStateProps) {
   const [value, setValue] = useState<ExtractedDiffBlockPair>({
@@ -19,14 +19,8 @@ function WithState(props: WithStateProps) {
     },
   });
 
-  return (
-    <DiffViewer
-      value={value}
-      onHover={setValue}
-      {...props}
-    />
-  );
-};
+  return <DiffViewer value={value} onHover={setValue} {...props} />;
+}
 
 const meta: Meta<typeof DiffViewer> = {
   title: "Components/UI/DiffViewer",
@@ -39,7 +33,7 @@ const meta: Meta<typeof DiffViewer> = {
           <Story />
         </HighlightProvider>
       );
-    }
+    },
   ],
 };
 
@@ -188,7 +182,8 @@ export const Default: Story = {
           rightData: {
             value: {
               lineNumber: 9,
-              content: "      <HighlighterContext.Provider value={{ highlighter }}>",
+              content:
+                "      <HighlighterContext.Provider value={{ highlighter }}>",
             },
             lang: "tsx",
             diffType: "replaced",
@@ -234,7 +229,8 @@ export const Default: Story = {
           leftData: {
             value: {
               lineNumber: 9,
-              content: '      <h1 className=" font-bold underline">Hello world!</h1>',
+              content:
+                '      <h1 className=" font-bold underline">Hello world!</h1>',
             },
             lang: "tsx",
             diffType: "replaced",

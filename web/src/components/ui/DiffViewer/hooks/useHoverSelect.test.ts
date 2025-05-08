@@ -1,14 +1,15 @@
 import { act, renderHook } from "@testing-library/react";
-import { useHoverSelect } from "./useHoverSelect"; 
+import { useHoverSelect } from "./useHoverSelect";
 import { convertDiffBlock } from "../helpers";
-import { testDiffData } from './testDiffData'
+import { testDiffData } from "./testDiffData";
 
 import type { DiffViewerProps } from "../DiffViewer";
+import type { DiffRowProps } from "../DiffViewer";
 
 const mockProps: DiffViewerProps = {
   data: {
     fileName: "example.rs",
-    diffData: testDiffData as any,
+    diffData: testDiffData as DiffRowProps[],
   },
   value: {
     left: { fileName: "example.rs", data: [] },
@@ -30,7 +31,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.left.onMouseDown;
         const diffLine = { lineNumber: 1, content: "test" };
@@ -61,7 +62,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.left.onMouseDown;
         const diffLine1 = { lineNumber: 1, content: "test" };
@@ -96,7 +97,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.right.onMouseDown;
         const diffLine = { lineNumber: 1, content: "test" };
@@ -127,7 +128,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.right.onMouseDown;
         const diffLine1 = { lineNumber: 1, content: "test" };
@@ -164,7 +165,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseEnter = result.current.left.onMouseEnter;
         const diffLine = { lineNumber: 1, content: "test" };
@@ -179,7 +180,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.left.onMouseDown;
         const handleMouseEnter = result.current.left.onMouseEnter;
@@ -187,9 +188,13 @@ describe("useHoverSelect", () => {
         const diffLine1 = testDiffData[0]?.leftData?.value;
         const diffLine2 = testDiffData[3]?.leftData?.value;
 
+        if (!diffLine1 || !diffLine2) {
+          throw new Error("diffLine1 or diffLine2 is null");
+        }
+
         act(() => {
-          handleMouseDown(diffLine1 as any);
-          handleMouseEnter(diffLine2 as any);
+          handleMouseDown(diffLine1);
+          handleMouseEnter(diffLine2);
         });
 
         const diffBlock = convertDiffBlock(mockProps.data);
@@ -204,11 +209,10 @@ describe("useHoverSelect", () => {
           left: { fileName: "example.rs", data: [] },
           right: { fileName: "example.rs", data: [] },
         });
-        
+
         const updater2 = onHoverMock.mock.calls[1][0];
         const afterMouseEnter = updater2(afterMouseDown);
-        
-        
+
         expect(afterMouseEnter).toEqual({
           left: {
             fileName: "example.rs",
@@ -226,7 +230,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.left.onMouseDown;
         const handleMouseEnter = result.current.left.onMouseEnter;
@@ -234,9 +238,13 @@ describe("useHoverSelect", () => {
         const diffLine1 = testDiffData[0]?.leftData?.value;
         const diffLine2 = testDiffData[3]?.leftData?.value;
 
+        if (!diffLine1 || !diffLine2) {
+          throw new Error("diffLine1 or diffLine2 is null");
+        }
+
         act(() => {
-          handleMouseDown(diffLine2 as any);
-          handleMouseEnter(diffLine1 as any);
+          handleMouseDown(diffLine2);
+          handleMouseEnter(diffLine1);
         });
 
         const diffBlock = convertDiffBlock(mockProps.data);
@@ -247,13 +255,13 @@ describe("useHoverSelect", () => {
         ];
 
         expect(onHoverMock).toHaveBeenCalledTimes(2);
-        
+
         const updater1 = onHoverMock.mock.calls[0][0];
         const afterMouseDown = updater1({
           left: { fileName: "example.rs", data: [] },
           right: { fileName: "example.rs", data: [] },
         });
-        
+
         const updater2 = onHoverMock.mock.calls[1][0];
         const afterMouseEnter = updater2(afterMouseDown);
 
@@ -276,7 +284,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseEnter = result.current.right.onMouseEnter;
         const diffLine = { lineNumber: 1, content: "test" };
@@ -291,7 +299,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.right.onMouseDown;
         const handleMouseEnter = result.current.right.onMouseEnter;
@@ -299,9 +307,13 @@ describe("useHoverSelect", () => {
         const diffLine1 = testDiffData[0]?.rightData?.value;
         const diffLine2 = testDiffData[3]?.rightData?.value;
 
+        if (!diffLine1 || !diffLine2) {
+          throw new Error("diffLine1 or diffLine2 is null");
+        }
+
         act(() => {
-          handleMouseDown(diffLine1 as any);
-          handleMouseEnter(diffLine2 as any);
+          handleMouseDown(diffLine1);
+          handleMouseEnter(diffLine2);
         });
 
         const diffBlock = convertDiffBlock(mockProps.data);
@@ -313,13 +325,13 @@ describe("useHoverSelect", () => {
         ];
 
         expect(onHoverMock).toHaveBeenCalledTimes(2);
-        
+
         const updater1 = onHoverMock.mock.calls[0][0];
         const afterMouseDown = updater1({
           left: { fileName: "example.rs", data: [] },
           right: { fileName: "example.rs", data: [] },
         });
-        
+
         const updater2 = onHoverMock.mock.calls[1][0];
         const afterMouseEnter = updater2(afterMouseDown);
 
@@ -340,7 +352,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const handleMouseDown = result.current.right.onMouseDown;
         const handleMouseEnter = result.current.right.onMouseEnter;
@@ -348,9 +360,13 @@ describe("useHoverSelect", () => {
         const diffLine1 = testDiffData[0]?.rightData?.value;
         const diffLine2 = testDiffData[3]?.rightData?.value;
 
+        if (!diffLine1 || !diffLine2) {
+          throw new Error("diffLine1 or diffLine2 is null");
+        }
+
         act(() => {
-          handleMouseDown(diffLine2 as any);
-          handleMouseEnter(diffLine1 as any);
+          handleMouseDown(diffLine2);
+          handleMouseEnter(diffLine1);
         });
 
         const diffBlock = convertDiffBlock(mockProps.data);
@@ -362,13 +378,13 @@ describe("useHoverSelect", () => {
         ];
 
         expect(onHoverMock).toHaveBeenCalledTimes(2);
-        
+
         const updater1 = onHoverMock.mock.calls[0][0];
         const afterMouseDown = updater1({
           left: { fileName: "example.rs", data: [] },
           right: { fileName: "example.rs", data: [] },
         });
-        
+
         const updater2 = onHoverMock.mock.calls[1][0];
         const afterMouseEnter = updater2(afterMouseDown);
 
@@ -388,11 +404,13 @@ describe("useHoverSelect", () => {
   describe("handleMouseUp", () => {
     it("handleMouseUp 実行後は handleMouseEnter が onHover を呼ばない", () => {
       const onHoverMock = jest.fn();
-      const { result } = renderHook(() => useHoverSelect({
-        ...mockProps,
-        onHover: onHoverMock,
-      }));
-    
+      const { result } = renderHook(() =>
+        useHoverSelect({
+          ...mockProps,
+          onHover: onHoverMock,
+        }),
+      );
+
       const diffLine = { lineNumber: 1, content: "test line" };
 
       act(() => {
@@ -422,14 +440,14 @@ describe("useHoverSelect", () => {
           ...mockProps,
           data: {
             fileName: "example2.rs",
-            diffData: testDiffData as any,
+            diffData: testDiffData as DiffRowProps[],
           },
           value: {
             left: { fileName: "example.rs", data: [diffLine] },
             right: { fileName: "example.rs", data: [] },
           },
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const checkLineSelected = result.current.left.selectionChecker;
         const lineNumber = 1;
@@ -442,7 +460,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const checkLineSelected = result.current.left.selectionChecker;
         const lineNumber = 1;
@@ -461,12 +479,12 @@ describe("useHoverSelect", () => {
             left: { fileName: "example.rs", data: [diffLine] },
             right: { fileName: "example.rs", data: [] },
           },
-        }
+        };
 
         const { result } = renderHook(() => useHoverSelect(props));
-        
+
         const checkLineSelected = result.current.left.selectionChecker;
-        
+
         expect(checkLineSelected(1)).toBe(true);
       });
     });
@@ -480,14 +498,14 @@ describe("useHoverSelect", () => {
           ...mockProps,
           data: {
             fileName: "example2.rs",
-            diffData: testDiffData as any,
+            diffData: testDiffData as DiffRowProps[],
           },
           value: {
             left: { fileName: "example.rs", data: [] },
             right: { fileName: "example.rs", data: [diffLine] },
           },
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const checkLineSelected = result.current.right.selectionChecker;
         const lineNumber = 1;
@@ -500,7 +518,7 @@ describe("useHoverSelect", () => {
         const props = {
           ...mockProps,
           onHover: onHoverMock,
-        }
+        };
         const { result } = renderHook(() => useHoverSelect(props));
         const checkLineSelected = result.current.right.selectionChecker;
         const lineNumber = 1;
@@ -519,11 +537,11 @@ describe("useHoverSelect", () => {
             left: { fileName: "example.rs", data: [] },
             right: { fileName: "example.rs", data: [diffLine] },
           },
-        }
+        };
 
         const { result } = renderHook(() => useHoverSelect(props));
         const checkLineSelected = result.current.right.selectionChecker;
-        
+
         expect(checkLineSelected(1)).toBe(true);
       });
     });

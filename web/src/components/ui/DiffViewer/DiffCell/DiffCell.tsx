@@ -1,15 +1,15 @@
-import { ReactElement, memo } from 'react';
+import { ReactElement, memo } from "react";
 import { tv } from "tailwind-variants";
 import { DiffType } from "@/types";
-import { useHighlighter } from "../contexts"
+import { useHighlighter } from "../contexts";
 import styles from "./DiffCell.module.css";
-import { bundledLanguages } from "shiki"; 
+import { bundledLanguages } from "shiki";
 import { DiffIcon } from "@/components/ui/commons";
 
 const isSelected = {
   true: "after:inset-0 after:absolute after:bg-blue-400 after:mix-blend-multiply after:opacity-50",
   false: "",
-}
+};
 
 const numberCell = tv({
   base: `relative text-sm w-[4ch] text-center align-top select-none`,
@@ -58,7 +58,6 @@ export interface DiffCellDataProps {
   diffType: DiffType;
 }
 
-
 export interface DiffCellProps extends DiffCellDataProps {
   onMouseDown: (line: DiffLine) => void;
   onMouseEnter: (line: DiffLine) => void;
@@ -88,10 +87,13 @@ function DiffCell({
 
   return (
     <>
-      <td className={numberCell({diffType, isSelected: selected})}>{lineNumber}</td>
-      <td className={diffCell({diffType, isSelected: selected})}
-          onMouseDown={() => onMouseDown({lineNumber, content})}
-          onMouseEnter={() => onMouseEnter({lineNumber, content})}
+      <td className={numberCell({ diffType, isSelected: selected })}>
+        {lineNumber}
+      </td>
+      <td
+        className={diffCell({ diffType, isSelected: selected })}
+        onMouseDown={() => onMouseDown({ lineNumber, content })}
+        onMouseEnter={() => onMouseEnter({ lineNumber, content })}
       >
         <div className="flex items-start gap-1">
           <DiffIcon diffType={diffType} />
@@ -103,24 +105,24 @@ function DiffCell({
       </td>
     </>
   );
-};
+}
 
 export function EmptyCell(): ReactElement {
   return (
     <>
-      <td className={numberCell({diffType: "null"})}>&nbsp;</td>
-      <td className={diffCell({diffType: "null"})}>&nbsp;</td>
+      <td className={numberCell({ diffType: "null" })}>&nbsp;</td>
+      <td className={diffCell({ diffType: "null" })}>&nbsp;</td>
     </>
   );
 }
 
 const MemoizedDiffCell = memo(DiffCell, (prev, next) => {
-  return prev.selected === next.selected &&
-         prev.value === next.value &&
-         prev.lang === next.lang &&
-         prev.diffType === next.diffType;
+  return (
+    prev.selected === next.selected &&
+    prev.value === next.value &&
+    prev.lang === next.lang &&
+    prev.diffType === next.diffType
+  );
 });
 
-export {
-  MemoizedDiffCell as DiffCell, 
-}
+export { MemoizedDiffCell as DiffCell };

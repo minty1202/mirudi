@@ -1,2 +1,2 @@
-export * from './useDiffData';
-export * from './useFilesData';
+export * from "./useDiffData";
+export * from "./useFilesData";

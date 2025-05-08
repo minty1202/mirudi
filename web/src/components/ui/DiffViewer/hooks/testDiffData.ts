@@ -272,4 +272,4 @@ export const testDiffData = [
       diffType: "equal",
     },
   },
-]
+];

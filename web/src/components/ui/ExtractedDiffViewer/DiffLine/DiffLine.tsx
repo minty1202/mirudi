@@ -7,7 +7,6 @@ interface DiffLineProps {
 }
 
 export function DiffLine({ diff: diffLines }: DiffLineProps): ReactElement {
-
   return (
     <>
       {diffLines.map((diff, index) => (
@@ -16,5 +15,5 @@ export function DiffLine({ diff: diffLines }: DiffLineProps): ReactElement {
         </tr>
       ))}
     </>
-  )
+  );
 }

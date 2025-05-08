@@ -3,7 +3,7 @@ import { DiffCell } from "./DiffCell";
 import { DiffContent } from "../helpers";
 
 interface DiffBlockProps {
-  diff: DiffContent[][]
+  diff: DiffContent[][];
 }
 
 export function DiffBlock({ diff: diffBlocks }: DiffBlockProps): ReactElement {
