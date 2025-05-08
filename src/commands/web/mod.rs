@@ -19,6 +19,7 @@ pub fn handle(
     git: Arc<dyn GitProvider + Send + Sync>,
 ) -> Result<(), CommandError> {
     println!("Webサーバーを起動しています。ポート: {}", cmd.port);
+    tracing_subscriber::fmt::init();
 
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async {

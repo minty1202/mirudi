@@ -1,6 +1,6 @@
 use prettydiff::{basic::DiffOp, diff_chars, diff_lines, diff_slice, diff_words};
 
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum DiffType {
     Added,
@@ -13,13 +13,13 @@ pub enum DiffType {
 pub struct LineInfo {
     pub lineno: usize,
     pub content: String,
+    pub diff_type: DiffType,
 }
 
 #[derive(serde::Serialize)]
 pub struct LineDiff {
     pub old: Option<LineInfo>,
     pub new: Option<LineInfo>,
-    pub diff_type: DiffType,
 }
 
 pub trait DiffProvider {
@@ -65,8 +65,8 @@ impl Diff {
                                 new: Some(LineInfo {
                                     lineno: new_lineno,
                                     content: line.to_string(),
+                                    diff_type: DiffType::Added,
                                 }),
-                                diff_type: DiffType::Added,
                             },
                             true,
                         ));
@@ -80,9 +80,9 @@ impl Diff {
                                 old: Some(LineInfo {
                                     lineno: old_lineno,
                                     content: line.to_string(),
+                                    diff_type: DiffType::Removed,
                                 }),
                                 new: None,
-                                diff_type: DiffType::Removed,
                             },
                             true,
                         ));
@@ -96,12 +96,13 @@ impl Diff {
                                 old: Some(LineInfo {
                                     lineno: old_lineno,
                                     content: line.to_string(),
+                                    diff_type: DiffType::Equal,
                                 }),
                                 new: Some(LineInfo {
                                     lineno: new_lineno,
                                     content: line.to_string(),
+                                    diff_type: DiffType::Equal,
                                 }),
-                                diff_type: DiffType::Equal,
                             },
                             false,
                         ));
@@ -128,12 +129,13 @@ impl Diff {
                                 old: old.map(|line| LineInfo {
                                     lineno: old_lineno + i,
                                     content: line.to_string(),
+                                    diff_type,
                                 }),
                                 new: new.map(|line| LineInfo {
                                     lineno: new_lineno + i,
                                     content: line.to_string(),
+                                    diff_type,
                                 }),
-                                diff_type,
                             },
                             true,
                         ));

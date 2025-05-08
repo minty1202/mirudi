@@ -5,6 +5,33 @@ import { useHighlighter } from "../contexts";
 import styles from "./DiffCell.module.css";
 import { bundledLanguages } from "shiki";
 import { DiffIcon } from "@/components/ui/commons";
+import { Highlighter } from "shiki";
+
+interface CodeContentProps {
+  code: string;
+  lang: string;
+  highlighter: Highlighter;
+}
+
+function CodeContent({
+  code,
+  lang,
+  highlighter,
+}: CodeContentProps): ReactElement {
+  const normalizedLang = lang && lang in bundledLanguages ? lang : "plaintext";
+
+  const highlightedCode = highlighter.codeToHtml(code || "", {
+    lang: normalizedLang,
+    theme: "github-light",
+  });
+
+  return (
+    <span
+      className={styles.inlineCode}
+      dangerouslySetInnerHTML={{ __html: highlightedCode }}
+    />
+  );
+}
 
 const isSelected = {
   true: "after:inset-0 after:absolute after:bg-blue-400 after:mix-blend-multiply after:opacity-50",
@@ -74,17 +101,6 @@ function DiffCell({
 }: DiffCellProps): ReactElement {
   const highlighter = useHighlighter();
 
-  if (!highlighter) {
-    throw new Error("Highlighter context is not available");
-  }
-
-  const normalizedLang = lang && lang in bundledLanguages ? lang : "plaintext";
-
-  const code = highlighter.codeToHtml(content || "", {
-    lang: normalizedLang,
-    theme: "github-light",
-  });
-
   return (
     <>
       <td className={numberCell({ diffType, isSelected: selected })}>
@@ -97,10 +113,10 @@ function DiffCell({
       >
         <div className="flex items-start gap-1">
           <DiffIcon diffType={diffType} />
-          <span
-            className={styles.inlineCode}
-            dangerouslySetInnerHTML={{ __html: code }}
-          />
+          {highlighter && (
+            <CodeContent code={content} lang={lang} highlighter={highlighter} />
+          )}
+          {!highlighter && <span className="text-gray-500">{content}</span>}
         </div>
       </td>
     </>

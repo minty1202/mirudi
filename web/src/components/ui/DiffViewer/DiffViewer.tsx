@@ -5,6 +5,7 @@ import { DiffCell, EmptyCell } from "./DiffCell";
 import type { DiffCellDataProps, DiffLine } from "./DiffCell";
 import { useHoverSelect } from "./hooks";
 import { HighlightProvider } from "./contexts";
+import { ViewerBox } from "./ViewerBox";
 
 export interface DiffRowProps {
   leftData?: DiffCellDataProps | null;
@@ -50,10 +51,7 @@ function RawDiffViewer({
 
   return (
     <>
-      <div className="border border-gray-300 rounded-md bg-white">
-        <div className="text-md font-bold text-gray-700 bg-gray-50 border-b border-gray-300 p-2">
-          {fileName}
-        </div>
+      <ViewerBox fileName={fileName}>
         <table className="table-fixed w-full">
           <tbody onMouseUp={onMouseUp}>
             {diffData.map(({ leftData, rightData }, index) => (
@@ -80,7 +78,7 @@ function RawDiffViewer({
             ))}
           </tbody>
         </table>
-      </div>
+      </ViewerBox>
     </>
   );
 }

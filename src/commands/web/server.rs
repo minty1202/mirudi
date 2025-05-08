@@ -3,7 +3,7 @@ use crate::config::Manager;
 use crate::diff::{Diff, DiffProvider};
 use crate::git::{GitProvider, core::SourceKind};
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::{
     Router,
     body::Body,
@@ -12,7 +12,7 @@ use axum::{
     routing::get,
 };
 
-use indexmap::IndexMap;
+use std::collections::HashMap;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -59,7 +59,7 @@ pub async fn start_server(
 
     let api_routes = Router::new()
         .route("/files", get(get_changed_files))
-        .route("/diffs", get(get_diffs));
+        .route("/diff", get(get_diff));
 
     let origins = vec![
         HeaderValue::from_str("http://localhost:4321").unwrap(),
@@ -146,45 +146,37 @@ async fn get_changed_files(State(state): State<Arc<WebServerState>>) -> impl Int
     }
 }
 
-async fn get_diffs(State(state): State<Arc<WebServerState>>) -> impl IntoResponse {
+async fn get_diff(
+    State(state): State<Arc<WebServerState>>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    let Some(file_path) = params.get("file") else {
+        return (StatusCode::BAD_REQUEST, "file クエリが必要").into_response();
+    };
+
     let base = &state.base_branch;
     let target = &state.target_branch;
     let git = state.git.clone();
 
-    let files = match git.list_changed_files(base, target) {
-        Ok(f) => f,
-        Err(e) => {
-            eprintln!("エラー発生: {:?}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, "diff一覧取得失敗").into_response();
+    let old_lines = git.extract_lines(base, file_path, 1, usize::MAX, Some(SourceKind::Commit));
+    let new_lines = git.extract_lines(target, file_path, 1, usize::MAX, Some(SourceKind::Commit));
+
+    match (old_lines, new_lines) {
+        (Ok(old), Ok(new)) => {
+            let diff = Diff::new(old, new).lines_structured();
+            Json(diff).into_response()
         }
-    };
-
-    let mut diffs = IndexMap::new();
-
-    for file_path in files {
-        let old_lines =
-            git.extract_lines(base, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
-        let new_lines =
-            git.extract_lines(target, &file_path, 1, usize::MAX, Some(SourceKind::Commit));
-
-        match (old_lines, new_lines) {
-            (Ok(old), Ok(new)) => {
-                let diff = Diff::new(old, new).lines_structured();
-                diffs.insert(file_path, diff);
-            }
-            (Ok(old), Err(_)) => {
-                let diff = Diff::new(old, vec![]).lines_structured();
-                diffs.insert(file_path, diff);
-            }
-            (Err(_), Ok(new)) => {
-                let diff = Diff::new(vec![], new).lines_structured();
-                diffs.insert(file_path, diff);
-            }
-            (Err(_), Err(_)) => {
-                eprintln!("ファイルのdiff取得失敗: {}", file_path);
-            }
+        (Ok(old), Err(_)) => {
+            let diff = Diff::new(old, vec![]).lines_structured();
+            Json(diff).into_response()
+        }
+        (Err(_), Ok(new)) => {
+            let diff = Diff::new(vec![], new).lines_structured();
+            Json(diff).into_response()
+        }
+        (Err(_), Err(_)) => {
+            eprintln!("ファイルのdiff取得失敗: {}", file_path);
+            (StatusCode::INTERNAL_SERVER_ERROR, "diff取得失敗").into_response()
         }
     }
-
-    Json(diffs).into_response()
 }

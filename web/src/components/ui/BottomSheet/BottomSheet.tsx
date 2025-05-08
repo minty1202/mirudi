@@ -17,7 +17,7 @@ const bottomSheet = tv({
 });
 
 const contentArea = tv({
-  base: `w-full h-[calc(40vh-${buttonHeight})] overflow-y-auto p-4 transition-opacity duration-300`,
+  base: `w-full h-[calc(40vh-${buttonHeight})] overflow-y-auto transition-opacity duration-300`,
   variants: {
     open: {
       true: "opacity-100",
