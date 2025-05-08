@@ -11,10 +11,10 @@ pub struct ScopeCommandInput {
     #[arg(short, long)]
     pub branch: Option<String>,
 
-    #[arg(long = "old-path")]
+    #[arg(short, long = "old-path")]
     pub old_path: Option<String>,
 
-    #[arg(long = "new-path")]
+    #[arg(short, long = "new-path")]
     pub new_path: Option<String>,
 
     #[arg(short, long)]
