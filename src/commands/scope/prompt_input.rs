@@ -1,39 +1,29 @@
+use crate::commands::error::CommandError;
 use crate::config::ConfigScopeInput;
-use crate::git::GitOperations;
+use crate::git::GitProvider;
 use dialoguer::{FuzzySelect, Input};
-use std::io::Error;
 
 #[cfg(test)]
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
 pub trait Runner {
-    fn exec(&self) -> Result<ConfigScopeInput, Error>;
+    fn exec(&self) -> Result<ConfigScopeInput, CommandError>;
 }
 
 pub struct PromptInputRunner<'a> {
-    git: &'a dyn GitOperations,
+    git: &'a dyn GitProvider,
 }
 
 impl<'a> PromptInputRunner<'a> {
-    pub fn new(git: &'a dyn GitOperations) -> Self {
+    pub fn new(git: &'a dyn GitProvider) -> Self {
         Self { git }
     }
 
-    fn prompt_branch(&self, git: &dyn GitOperations) -> Result<Option<String>, Error> {
-        let current_branch = git.get_current_branch().map_err(|_| {
-            Error::new(
-                std::io::ErrorKind::Other,
-                "Git のブランチ名の取得に失敗しました",
-            )
-        })?;
+    fn prompt_branch(&self, git: &dyn GitProvider) -> Result<Option<String>, CommandError> {
+        let current_branch = git.get_current_branch()?;
 
-        let branches = git.list_branches().map_err(|_| {
-            Error::new(
-                std::io::ErrorKind::Other,
-                "Git のブランチ一覧の取得に失敗しました",
-            )
-        })?;
+        let branches = git.list_branches()?;
 
         let current_branch_option = format!("現在のブランチ: {}", current_branch);
         let mut display_branches = vec![current_branch_option];
@@ -44,7 +34,7 @@ impl<'a> PromptInputRunner<'a> {
             .items(&display_branches)
             .default(0)
             .interact()
-            .map_err(|_| Error::new(std::io::ErrorKind::InvalidInput, "無効なブランチ選択です"))?;
+            .map_err(|_| CommandError::InvalidInput("無効なブランチ選択です".to_string()))?;
 
         if branch_idx == 0 {
             Ok(Some(current_branch))
@@ -53,17 +43,12 @@ impl<'a> PromptInputRunner<'a> {
         }
     }
 
-    fn prompt_path(&self, prompt_message: &str) -> Result<Option<String>, Error> {
+    fn prompt_path(&self, prompt_message: &str) -> Result<Option<String>, CommandError> {
         let path = Input::<String>::new()
             .with_prompt(prompt_message)
             .allow_empty(true)
             .interact()
-            .map_err(|e| {
-                Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    format!("無効なパス入力です: {}", e),
-                )
-            })?;
+            .map_err(|e| CommandError::InvalidInput(format!("無効なパス入力です: {}", e)))?;
 
         if path.trim().is_empty() {
             Ok(None)
@@ -72,17 +57,17 @@ impl<'a> PromptInputRunner<'a> {
         }
     }
 
-    fn prompt_old_path(&self) -> Result<Option<String>, Error> {
+    fn prompt_old_path(&self) -> Result<Option<String>, CommandError> {
         self.prompt_path("古いファイルパスを入力してください [Enter でスキップ]")
     }
 
-    fn prompt_new_path(&self) -> Result<Option<String>, Error> {
+    fn prompt_new_path(&self) -> Result<Option<String>, CommandError> {
         self.prompt_path("新しいファイルパスを入力してください [Enter でスキップ]")
     }
 }
 
 impl Runner for PromptInputRunner<'_> {
-    fn exec(&self) -> Result<ConfigScopeInput, Error> {
+    fn exec(&self) -> Result<ConfigScopeInput, CommandError> {
         let branch = self.prompt_branch(self.git)?;
         let old_path = self.prompt_old_path()?;
         let new_path = self.prompt_new_path()?;

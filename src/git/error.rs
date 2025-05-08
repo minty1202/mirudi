@@ -5,6 +5,7 @@ pub enum GitError {
     FileNotFound,
     InvalidObjectType,
     InvalidUtf8,
+    DiffExtractionFailed,
 }
 
 impl std::fmt::Display for GitError {
@@ -15,6 +16,7 @@ impl std::fmt::Display for GitError {
             GitError::FileNotFound => write!(f, "ファイルが見つかりません"),
             GitError::InvalidObjectType => write!(f, "無効なオブジェクトタイプです"),
             GitError::InvalidUtf8 => write!(f, "無効な UTF-8 文字列です"),
+            GitError::DiffExtractionFailed => write!(f, "差分の抽出に失敗しました"),
         }
     }
 }

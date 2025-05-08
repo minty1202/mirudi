@@ -9,6 +9,9 @@ if [[ -z "$notes" ]]; then
   exit 1
 fi
 
+echo "Building frontend..."
+cd web && pnpm build && cd ..
+
 echo "Building binary..."
 cargo build --release
 

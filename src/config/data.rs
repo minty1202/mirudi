@@ -41,7 +41,6 @@ pub struct ConfigScopeInput {
 }
 
 impl ConfigData {
-    #[cfg(test)]
     pub fn base_branch(&self) -> Option<String> {
         self.base_branch.clone()
     }

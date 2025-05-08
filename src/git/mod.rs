@@ -1,11 +1,11 @@
 pub mod core;
-pub mod error;
+mod error;
 
-use core::GitProvider;
-pub use core::{Git, GitOperations};
+pub use core::*;
+pub use error::*;
 
 pub fn init() -> Result<Git, error::GitError> {
-    let git = Git::new(GitProvider::new());
+    let git = Git::new();
     git.is_managed()?;
     Ok(git)
 }

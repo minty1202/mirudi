@@ -1,7 +1,10 @@
 BINARY_NAME=mirudi
 INSTALL_PATH=${HOME}/.local/bin
 
-build:
+frontend-build:
+	cd web && pnpm build
+
+build: frontend-build
 	cargo build --release
 
 install: build
@@ -23,6 +26,9 @@ check:
 format:
 	cargo fmt --all
 	@echo "Code formatted"
+
+watch_web:
+	cargo watch -x 'run -- web'
 
 test:
 	cargo test --all-targets --all-features -- --nocapture
