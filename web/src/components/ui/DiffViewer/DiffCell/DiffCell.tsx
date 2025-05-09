@@ -116,7 +116,7 @@ function DiffCell({
           {highlighter && (
             <CodeContent code={content} lang={lang} highlighter={highlighter} />
           )}
-          {!highlighter && <span className="text-gray-500">{content}</span>}
+          {!highlighter && <span className="text-gray-500 font-mono">{content}</span>}
         </div>
       </td>
     </>
