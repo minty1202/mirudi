@@ -6,7 +6,8 @@ import {
   renderHook,
   RenderHookResult,
 } from "@testing-library/react";
-import { HighlightProvider, useHighlighter } from "./HighlighterContext";
+import { useHighlighter } from "./HighlighterContext";
+import { HighlightProvider } from "./HighlightProvider";
 import type { Highlighter } from "shiki";
 
 jest.mock("shiki", () => ({
