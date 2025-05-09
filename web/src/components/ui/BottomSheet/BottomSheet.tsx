@@ -1,14 +1,12 @@
 import { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 
-const buttonHeight = "50px";
-
 const bottomSheet = tv({
   base: "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-300 shadow-lg transition-all duration-300 ease-in-out",
   variants: {
     open: {
       true: "h-[40vh]",
-      false: `h-[${buttonHeight}]`,
+      false: `h-[50px]`,
     },
   },
   defaultVariants: {
@@ -17,7 +15,7 @@ const bottomSheet = tv({
 });
 
 const contentArea = tv({
-  base: `w-full h-[calc(40vh-${buttonHeight})] overflow-y-auto transition-opacity duration-300`,
+  base: "w-full h-[calc(40vh-50px)] overflow-y-auto transition-opacity duration-300",
   variants: {
     open: {
       true: "opacity-100",
@@ -46,7 +44,7 @@ export function BottomSheet({
     <div className={bottomSheet({ open })}>
       <button
         onClick={() => (open ? onClose?.() : onOpen?.())}
-        className={`w-full h-[${buttonHeight}] bg-blue-400 text-white font-medium hover:bg-blue-500`}
+        className="w-full h-[50px] bg-blue-400 text-white font-medium hover:bg-blue-500"
       >
         {open ? "閉じる" : "開く"}
       </button>
