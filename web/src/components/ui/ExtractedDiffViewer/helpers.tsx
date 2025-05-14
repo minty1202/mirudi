@@ -5,6 +5,18 @@ import {
   diffChars as diffCharsLib,
 } from "diff";
 
+import type { Change } from "diff";
+
+type DiffFunction = (
+  oldStr: string,
+  newStr: string,
+  options?: {
+    ignoreCase?: boolean;
+    ignoreWhitespace?: boolean;
+    newlineIsToken?: boolean;
+  },
+) => Change[];
+
 const mapDiffPartToType = (part: {
   added?: boolean;
   removed?: boolean;
@@ -20,12 +32,14 @@ type DiffContent = {
 };
 
 type DiffLinesResult = {
-  type: "lines" | "no-space-lines";
+  type: "lines";
   diff: DiffContent[];
 };
 
+type DiffBlockType = "words" | "chars";
+
 type DiffBlocksResult = {
-  type: "words" | "chars";
+  type: DiffBlockType;
   diff: DiffContent[][];
 };
 
@@ -37,122 +51,84 @@ interface DiffDataPair {
 }
 
 const diffLines = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
-  const maxLength = Math.max(oldLines.length, newLines.length);
-
+  const oldBlock = oldLines.join("\n");
+  const newBlock = newLines.join("\n");
+  const diff = diffLinesLib(oldBlock, newBlock, {
+    ignoreWhitespace: true,
+  });
   const diffResult: DiffResult = {
     type: "lines",
     diff: [],
   };
   const lineDiff: DiffContent[] = [];
+  diff.forEach((part) => {
+    const diffType = mapDiffPartToType(part);
+    const content = part.value || "";
 
-  for (let i = 0; i < maxLength; i++) {
-    const oldLine = oldLines[i] || "";
-    const newLine = newLines[i] || "";
+    const splittedContent = content.split("\n");
 
-    const diff = diffLinesLib(oldLine, newLine);
-    diff.forEach((part) => {
-      const diffType = mapDiffPartToType(part);
-      const content = part.value || "";
-
+    splittedContent.forEach((line) => {
       lineDiff.push({
-        content,
+        content: line,
         diffType,
       });
     });
-  }
+  });
   diffResult.diff = lineDiff;
   return diffResult;
 };
 
-const diffNoSpaceLines = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
-  const maxLength = Math.max(oldLines.length, newLines.length);
+const createDiffBlocksFunction =
+  (diffFn: DiffFunction, diffType: DiffBlockType) =>
+  ({ oldLines, newLines }: DiffDataPair): DiffResult => {
+    const oldBlock = oldLines.join("\n");
+    const newBlock = newLines.join("\n");
+    const diff = diffFn(oldBlock, newBlock);
+    const diffResult: DiffResult = {
+      type: diffType,
+      diff: [],
+    };
 
-  const diffResult: DiffResult = {
-    type: "no-space-lines",
-    diff: [],
-  };
+    const diffContentArray: DiffContent[][] = [];
 
-  const lineDiff: DiffContent[] = [];
-  for (let i = 0; i < maxLength; i++) {
-    const oldLine = oldLines[i] || "";
-    const newLine = newLines[i] || "";
+    let currentLine: DiffContent[] = [];
 
-    const diff = diffLinesLib(oldLine.trim(), newLine.trim());
     diff.forEach((part) => {
       const diffType = mapDiffPartToType(part);
       const content = part.value || "";
 
-      lineDiff.push({
-        content,
-        diffType,
+      const lines = content.split("\n");
+
+      lines.forEach((line, index) => {
+        if (line !== "") {
+          currentLine.push({
+            content: line,
+            diffType,
+          });
+        }
+
+        if (index < lines.length - 1) {
+          diffContentArray.push(currentLine);
+          currentLine = [];
+        }
       });
     });
-  }
-  diffResult.diff = lineDiff;
-  return diffResult;
-};
 
-const diffWords = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
-  const maxLength = Math.max(oldLines.length, newLines.length);
+    if (currentLine.length > 0) {
+      diffContentArray.push(currentLine);
+    }
 
-  const diffResult: DiffResult = {
-    type: "words",
-    diff: [],
+    diffResult.diff = diffContentArray;
+
+    return diffResult;
   };
-  const wordDiff: DiffContent[][] = [];
-  for (let i = 0; i < maxLength; i++) {
-    const oldLine = oldLines[i] || "";
-    const newLine = newLines[i] || "";
 
-    const diff = diffWordsLib(oldLine, newLine);
-    const lineDiff: DiffContent[] = [];
-    diff.forEach((part) => {
-      const diffType = mapDiffPartToType(part);
-      const content = part.value || "";
+const diffWords = createDiffBlocksFunction(diffWordsLib, "words");
 
-      lineDiff.push({
-        content,
-        diffType,
-      });
-    });
-    wordDiff.push(lineDiff);
-  }
-  diffResult.diff = wordDiff;
-  return diffResult;
-};
-
-const diffChars = ({ oldLines, newLines }: DiffDataPair): DiffResult => {
-  const maxLength = Math.max(oldLines.length, newLines.length);
-
-  const diffResult: DiffResult = {
-    type: "chars",
-    diff: [],
-  };
-  const charDiff: DiffContent[][] = [];
-  for (let i = 0; i < maxLength; i++) {
-    const oldLine = oldLines[i] || "";
-    const newLine = newLines[i] || "";
-
-    const diff = diffCharsLib(oldLine, newLine);
-    const lineDiff: DiffContent[] = [];
-    diff.forEach((part) => {
-      const diffType = mapDiffPartToType(part);
-      const content = part.value || "";
-
-      lineDiff.push({
-        content,
-        diffType,
-      });
-    });
-    charDiff.push(lineDiff);
-  }
-  diffResult.diff = charDiff;
-  return diffResult;
-};
+const diffChars = createDiffBlocksFunction(diffCharsLib, "chars");
 
 export const diff = {
   lines: diffLines,
-  noSpaceLines: diffNoSpaceLines,
   words: diffWords,
   chars: diffChars,
 };
