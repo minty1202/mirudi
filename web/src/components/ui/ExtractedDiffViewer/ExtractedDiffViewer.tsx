@@ -17,10 +17,7 @@ function DiffTable({ diffResult }: DiffTableProps): ReactElement {
     <div className="border border-gray-300 rounded-md bg-white">
       <table className="table-fixed w-full">
         <tbody>
-          {(diffResult.type === "lines" ||
-            diffResult.type === "no-space-lines") && (
-            <DiffLine diff={diffResult.diff} />
-          )}
+          {diffResult.type === "lines" && <DiffLine diff={diffResult.diff} />}
           {(diffResult.type === "words" || diffResult.type === "chars") && (
             <DiffBlock diff={diffResult.diff} />
           )}
@@ -30,15 +27,14 @@ function DiffTable({ diffResult }: DiffTableProps): ReactElement {
   );
 }
 
-type ViewType = "lines" | "no-space-lines" | "words" | "chars";
-const tabs: ViewType[] = ["lines", "no-space-lines", "words", "chars"];
+type ViewType = "lines" | "words" | "chars";
+const tabs: ViewType[] = ["lines", "words", "chars"];
 
 const diffFnMap: Record<
   ViewType,
   (data: { oldLines: string[]; newLines: string[] }) => DiffResult
 > = {
   lines: diff.lines,
-  "no-space-lines": diff.noSpaceLines,
   words: diff.words,
   chars: diff.chars,
 };
